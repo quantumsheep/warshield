@@ -1,0 +1,13 @@
+{
+  "name": "warshield",
+  "version": "1.0.0",
+  "description": "Warshield is a file encryption and decryption CLI using 3DES algorithm",
+  "bin": {
+    "warshield": "./warshield.js"
+  },
+  "author": "QuantumSheep <nathanael.dmc@outlook.fr>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^10.11.7"
+  }
+}
