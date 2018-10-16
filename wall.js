@@ -7,6 +7,10 @@ const crypto = require('crypto');
  */
 const md5 = text => crypto.createHash('md5').update(text).digest();
 
+/**
+ * @param {Buffer} buf 
+ * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ */
 const encrypt = (buf, key) => {
   key = md5(key);
   key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
