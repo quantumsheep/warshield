@@ -23,8 +23,8 @@ if (action === 'encrypt' || action === 'decrypt') {
 
       const loop = arrayLoop(files, file => {
         return wall.cipherizeFile(file, key, action === 'encrypt')
-          .then(() => process.stdout.write(`\x1b[32mDone ${action}ing\x1b[0m - ${file}\n`))
-          .catch(() => process.stdout.write(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}\n`));
+          .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}\n`))
+          .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}\n`));
       });
 
       const repeat = () => {
