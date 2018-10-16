@@ -1,5 +1,4 @@
 const fs = require('fs');
-const util = require('util');
 const crypto = require('crypto');
 
 /**
@@ -55,69 +54,54 @@ const decryptStream = (key) => {
 }
 
 /**
- * @param {string} file 
+ * 
+ * @param {string} original 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {boolean} encrypt 
  */
-const encryptFile = (file, key) => new Promise((resolve, reject) => {
-  // Create original file read stream
-  const r = fs.createReadStream(file);
-  if (!r.readable) return resolve(false);
+const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) => {
+  const source = {
+    rs: fs.createReadStream(original),
+    ws: null,
+  }
 
-  // Generate warshield filename
-  const rand = crypto.randomBytes(4).toString('hex');
-  const outFilename = `${file}.${rand}.warshield`;
+  if (!source.rs.readable) {
+    return reject(false);
+  }
 
-  // Create warshield file write stream
-  const outw = fs.createWriteStream(outFilename);
+  // Generate warshield file id
+  const id = crypto.randomBytes(8).toString('hex');
+  const targetname = `${original}.${id}.warshield`;
+
+  const target = {
+    rs: null,
+    ws: fs.createWriteStream(targetname),
+  }
+
+  if (!target.ws.writable) {
+    return reject(false);
+  }
+
+  // Error function
+  const ERROR = err => {
+    fs.unlink(outFilename, () => { });
+    reject(err);
+  }
+
+  // Create cipher stream
+  const cipher = (encrypt ? encryptStream : decryptStream)(key);
+  cipher.on('error', ERROR);
 
   // Pipe original file into cipher and cipher into warshield file
-  const stream = r.pipe(encryptStream(key)).pipe(outw);
+  const stream = source.rs.pipe(cipher).pipe(target.ws);
 
   stream.on('finish', () => {
-    // Create warshield file read stream
-    const outr = fs.createReadStream(outFilename);
-
-    // Create original file write stream
-    const w = fs.createWriteStream(file);
+    target.rs = fs.createReadStream(target.ws.path);
+    source.ws = fs.createWriteStream(source.rs.path);
 
     // Pipe warshield file into original file
-    outr.pipe(w).on('finish', () => {
-      // Delete warshield file
-      fs.unlink(outFilename, () => resolve(true));
-    });
-  });
-});
-
-/**
- * @param {string} file 
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
- */
-const decryptFile = (file, key) => new Promise((resolve, reject) => {
-  // Create original file read stream
-  const r = fs.createReadStream(file);
-  if (!r.readable) return resolve(false);
-
-  // Generate warshield filename
-  const rand = crypto.randomBytes(4).toString('hex');
-  const outFilename = `${file}.${rand}.warshield`;
-
-  // Create warshield file write stream
-  const outw = fs.createWriteStream(outFilename);
-
-  // Pipe original file into cipher and cipher into warshield file
-  const stream = r.pipe(decryptStream(key)).pipe(outw);
-
-  stream.on('finish', () => {
-    // Create warshield file read stream
-    const outr = fs.createReadStream(outFilename);
-
-    // Create original file write stream
-    const w = fs.createWriteStream(file);
-
-    // Pipe warshield file into original file
-    outr.pipe(w).on('finish', () => {
-      // Delete warshield file
-      fs.unlink(outFilename, () => resolve(true));
+    target.rs.pipe(source.ws).on('finish', () => {
+      fs.unlink(target.ws.path, () => resolve(true));
     });
   });
 });
@@ -125,6 +109,5 @@ const decryptFile = (file, key) => new Promise((resolve, reject) => {
 module.exports = {
   encrypt,
   decrypt,
-  encryptFile,
-  decryptFile,
+  cipherizeFile,
 }
