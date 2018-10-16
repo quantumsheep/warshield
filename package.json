@@ -5,7 +5,17 @@
   "bin": {
     "warshield": "./warshield.js"
   },
-  "author": "QuantumSheep <nathanael.dmc@outlook.fr>",
+  "contributors": [
+    {
+      "name": "Nathanael Demacon",
+      "email": "nathanael.dmc@outlook.fr"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/QuantumSheep/warshield.git"
+  },
+  "author": "Nathanael Demacon <nathanael.dmc@outlook.fr>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^10.11.7"
