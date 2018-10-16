@@ -22,10 +22,6 @@ const walk = async (dir, filelist = []) => {
 
 const init = async (file, key) => {
   try {
-    if (!file || !key) {
-      return console.log('encrypt (file) (key)');
-    }
-
     const stat = await util.promisify(fs.stat)(file);
 
     if (stat.isDirectory()) {
@@ -39,7 +35,7 @@ const init = async (file, key) => {
     } else {
       wall.encryptFile(file, key)
         .then(() => console.log(file, true))
-        .catch(() => console.error(file, false))
+        .catch(console.error);
     }
   } catch (e) {
     console.error(e.message);
