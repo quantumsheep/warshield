@@ -74,7 +74,6 @@ const encryptFile = (file, key) => new Promise((resolve, reject) => {
   const stream = r.pipe(encryptStream(key)).pipe(outw);
 
   stream.on('finish', () => {
-    console.log('finish');
     // Create warshield file read stream
     const outr = fs.createReadStream(outFilename);
 
@@ -109,7 +108,6 @@ const decryptFile = (file, key) => new Promise((resolve, reject) => {
   const stream = r.pipe(decryptStream(key)).pipe(outw);
 
   stream.on('finish', () => {
-    console.log('finish');
     // Create warshield file read stream
     const outr = fs.createReadStream(outFilename);
 
