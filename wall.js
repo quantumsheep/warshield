@@ -83,7 +83,7 @@ const encryptFile = (file, key) => new Promise((resolve, reject) => {
     // Pipe warshield file into original file
     outr.pipe(w).on('finish', () => {
       // Delete warshield file
-      fs.unlink(outFilename, () => { });
+      fs.unlink(outFilename, () => resolve(true));
     });
   });
 });
@@ -117,7 +117,7 @@ const decryptFile = (file, key) => new Promise((resolve, reject) => {
     // Pipe warshield file into original file
     outr.pipe(w).on('finish', () => {
       // Delete warshield file
-      fs.unlink(outFilename, () => { });
+      fs.unlink(outFilename, () => resolve(true));
     });
   });
 });
