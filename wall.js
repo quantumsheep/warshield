@@ -60,8 +60,18 @@ const decryptStream = (key) => {
  * @param {boolean} encrypt 
  */
 const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) => {
+  // Generate warshield file id
+  const id = crypto.randomBytes(8).toString('hex');
+  const targetname = `${original}.${id}.warshield`;
+
+  // Error function
+  const ERROR = err => {
+    fs.unlink(targetname, () => { });
+    reject(err);
+  }
+
   const source = {
-    rs: fs.createReadStream(original),
+    rs: fs.createReadStream(original).on('error', ERROR),
     ws: null,
   }
 
@@ -69,23 +79,13 @@ const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) 
     return reject(false);
   }
 
-  // Generate warshield file id
-  const id = crypto.randomBytes(8).toString('hex');
-  const targetname = `${original}.${id}.warshield`;
-
   const target = {
     rs: null,
-    ws: fs.createWriteStream(targetname),
+    ws: fs.createWriteStream(targetname).on('error', ERROR),
   }
 
   if (!target.ws.writable) {
     return reject(false);
-  }
-
-  // Error function
-  const ERROR = err => {
-    fs.unlink(outFilename, () => { });
-    reject(err);
   }
 
   // Create cipher stream
@@ -96,8 +96,8 @@ const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) 
   const stream = source.rs.pipe(cipher).pipe(target.ws);
 
   stream.on('finish', () => {
-    target.rs = fs.createReadStream(target.ws.path);
-    source.ws = fs.createWriteStream(source.rs.path);
+    target.rs = fs.createReadStream(target.ws.path).on('error', ERROR);
+    source.ws = fs.createWriteStream(source.rs.path).on('error', ERROR);
 
     // Pipe warshield file into original file
     target.rs.pipe(source.ws).on('finish', () => {
