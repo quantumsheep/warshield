@@ -24,7 +24,7 @@ const encrypt = (buf, key) => {
   key = md5(key);
   key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
 
-  const cipher = crypto.createCipheriv('des-ede3', key, '');
+  const cipher = crypto.createCipher('aes-256-ctr', key);
   const encrypted = Buffer.concat([cipher.update(buf), cipher.final()]);
 
   return encrypted;
@@ -37,7 +37,7 @@ const encryptStream = (key) => {
   key = md5(key);
   key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
 
-  return crypto.createCipheriv('des-ede3', key, '');
+  return crypto.createCipher('aes-256-ctr', key);
 }
 
 /**
@@ -47,7 +47,7 @@ const encryptStream = (key) => {
 const decrypt = (buf, key) => {
   key = generateKey(key);
 
-  const decipher = crypto.createDecipheriv('des-ede3', key, '');
+  const decipher = crypto.createDecipher('aes-256-ctr', key);
   const decrypted = Buffer.concat([decipher.update(buf), decipher.final()]);
   return decrypted;
 }
@@ -58,7 +58,7 @@ const decrypt = (buf, key) => {
 const decryptStream = (key) => {
   key = generateKey(key);
 
-  return crypto.createDecipheriv('des-ede3', key, '');
+  return crypto.createDecipher('aes-256-ctr', key);
 }
 
 /**
