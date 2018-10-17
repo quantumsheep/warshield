@@ -21,8 +21,10 @@ if (action === 'encrypt' || action === 'decrypt') {
 
       const files = stat.isDirectory() ? await walk(file) : [file];
 
+      const derivedKey = await wall.generateKey(key);
+
       const loop = arrayLoop(files, file => {
-        return wall.cipherizeFile(file, key, action === 'encrypt')
+        return wall.cipherizeFile(file, derivedKey, action === 'encrypt')
           .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}`))
           .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}`));
       });

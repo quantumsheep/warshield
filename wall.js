@@ -1,70 +1,67 @@
 const fs = require('fs');
 const crypto = require('crypto');
 
-const ENCRYPTION_ALGORITHM = 'aes-256-ctr';
+// Define a fixed IV to match AES recommendations
+// Full Buffer is d0 fd 1a 44 c4 fb ed d1 56 27 3f 85 60 51 0f 1a
+const IV = Buffer.from([
+  0xd0, 0xfd, 0x1a, 0x44,
+  0xc4, 0xfb, 0xed, 0xd1,
+  0x56, 0x27, 0x3f, 0x85,
+  0x60, 0x51, 0x0f, 0x1a,
+]).toString('hex').slice(0, 16);
 
-/**
- * @param {string | Buffer | NodeJS.TypedArray | DataView} text 
- */
-const md5 = text => crypto.createHash('md5').update(text).digest();
+const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
 
 /**
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
-const generateKey = (key) => {
-  key = md5(key);
-  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+const generateKey = key => new Promise((resolve, reject) => {
+  crypto.pbkdf2(key, 'salt', 100000, 32, 'sha512', (err, derivedKey) => {
+    if (err) return reject(err);
 
-  return key;
-}
+    resolve(derivedKey);
+  });
+});
 
 /**
  * @param {Buffer} buf 
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {Buffer} key 
  */
 const encrypt = (buf, key) => {
-  key = generateKey(key);
-
-  const cipher = crypto.createCipher(ENCRYPTION_ALGORITHM, key);
+  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, IV);
   const encrypted = Buffer.concat([cipher.update(buf), cipher.final()]);
 
   return encrypted;
 }
 
 /**
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {Buffer} key 
  */
 const encryptStream = (key) => {
-  key = generateKey(key);
-
-  return crypto.createCipher(ENCRYPTION_ALGORITHM, key);
+  return crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, IV);
 }
 
 /**
  * @param {Buffer} buf 
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {Buffer} key 
  */
 const decrypt = (buf, key) => {
-  key = generateKey(key);
-
-  const decipher = crypto.createDecipher(ENCRYPTION_ALGORITHM, key);
+  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, IV);
   const decrypted = Buffer.concat([decipher.update(buf), decipher.final()]);
   return decrypted;
 }
 
 /**
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {Buffer} key 
  */
 const decryptStream = (key) => {
-  key = generateKey(key);
-
-  return crypto.createDecipher(ENCRYPTION_ALGORITHM, key);
+  return crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, IV);
 }
 
 /**
  * 
  * @param {string} original 
- * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {Buffer} key 
  * @param {boolean} encrypt 
  */
 const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) => {
@@ -115,6 +112,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise((resolve, reject) 
 });
 
 module.exports = {
+  generateKey,
   encrypt,
   decrypt,
   cipherizeFile,
