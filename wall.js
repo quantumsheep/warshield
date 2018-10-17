@@ -7,6 +7,16 @@ const crypto = require('crypto');
 const md5 = text => crypto.createHash('md5').update(text).digest();
 
 /**
+ * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ */
+const generateKey = (key) => {
+  key = md5(key);
+  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+
+  return key;
+}
+
+/**
  * @param {Buffer} buf 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
@@ -35,8 +45,7 @@ const encryptStream = (key) => {
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
 const decrypt = (buf, key) => {
-  key = md5(key);
-  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+  key = generateKey(key);
 
   const decipher = crypto.createDecipheriv('des-ede3', key, '');
   const decrypted = Buffer.concat([decipher.update(buf), decipher.final()]);
@@ -47,8 +56,7 @@ const decrypt = (buf, key) => {
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
 const decryptStream = (key) => {
-  key = md5(key);
-  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+  key = generateKey(key);
 
   return crypto.createDecipheriv('des-ede3', key, '');
 }
