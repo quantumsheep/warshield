@@ -1,6 +1,8 @@
 const fs = require('fs');
 const crypto = require('crypto');
 
+const ENCRYPTION_ALGORITHM = 'aes-256-ctr';
+
 /**
  * @param {string | Buffer | NodeJS.TypedArray | DataView} text 
  */
@@ -23,7 +25,7 @@ const generateKey = (key) => {
 const encrypt = (buf, key) => {
   key = generateKey(key);
 
-  const cipher = crypto.createCipher('aes-256-ctr', key);
+  const cipher = crypto.createCipher(ENCRYPTION_ALGORITHM, key);
   const encrypted = Buffer.concat([cipher.update(buf), cipher.final()]);
 
   return encrypted;
@@ -35,7 +37,7 @@ const encrypt = (buf, key) => {
 const encryptStream = (key) => {
   key = generateKey(key);
 
-  return crypto.createCipher('aes-256-ctr', key);
+  return crypto.createCipher(ENCRYPTION_ALGORITHM, key);
 }
 
 /**
@@ -45,7 +47,7 @@ const encryptStream = (key) => {
 const decrypt = (buf, key) => {
   key = generateKey(key);
 
-  const decipher = crypto.createDecipher('aes-256-ctr', key);
+  const decipher = crypto.createDecipher(ENCRYPTION_ALGORITHM, key);
   const decrypted = Buffer.concat([decipher.update(buf), decipher.final()]);
   return decrypted;
 }
@@ -56,7 +58,7 @@ const decrypt = (buf, key) => {
 const decryptStream = (key) => {
   key = generateKey(key);
 
-  return crypto.createDecipher('aes-256-ctr', key);
+  return crypto.createDecipher(ENCRYPTION_ALGORITHM, key);
 }
 
 /**
