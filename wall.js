@@ -21,8 +21,7 @@ const generateKey = (key) => {
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
 const encrypt = (buf, key) => {
-  key = md5(key);
-  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+  key = generateKey(key);
 
   const cipher = crypto.createCipher('aes-256-ctr', key);
   const encrypted = Buffer.concat([cipher.update(buf), cipher.final()]);
@@ -34,8 +33,7 @@ const encrypt = (buf, key) => {
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
 const encryptStream = (key) => {
-  key = md5(key);
-  key = Buffer.concat([key, key.slice(0, 8)]); // properly expand 3DES key from 128 bit to 192 bit
+  key = generateKey(key);
 
   return crypto.createCipher('aes-256-ctr', key);
 }
