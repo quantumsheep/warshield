@@ -1,5 +1,5 @@
 # WarShield
-Warshield is a file encryption and decryption CLI using 3DES algorithm.
+Warshield is a file encryption and decryption CLI using AES 256 algorithm.
 
 # How to install
 `npm install -g warshield`
