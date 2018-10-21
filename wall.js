@@ -117,7 +117,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
 
           // Create cipher stream
           const decipher = decryptStream(derivedKey, iv);
-          decipher.stream.on('error', ERROR);
+          decipher.on('error', ERROR);
 
           decipher.setAuthTag(tag);
 
@@ -126,7 +126,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
           // Pipe original file into cipher and cipher into warshield file
           const stream = data_rs.pipe(decipher).pipe(target_ws);
 
-          decipher.on('finish', () => {
+          stream.on('finish', () => {
             const target_rs = fs.createReadStream(target_ws.path).on('error', ERROR);
             const source_ws = fs.createWriteStream(source_rs.path).on('error', ERROR);
 
