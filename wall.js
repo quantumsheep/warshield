@@ -55,7 +55,6 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
 
   // Error function
   const ERROR = err => {
-    console.log(err)
     fs.unlink(targetname, () => { });
     reject(err);
   }
