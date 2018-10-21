@@ -24,31 +24,10 @@ const generateKey = key => new Promise((resolve, reject) => {
 });
 
 /**
- * @param {Buffer} buf 
- * @param {Buffer} key 
- */
-const encrypt = (buf, key) => {
-  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, IV);
-  const encrypted = Buffer.concat([cipher.update(buf), cipher.final()]);
-
-  return encrypted;
-}
-
-/**
  * @param {Buffer} key 
  */
 const encryptStream = (key) => {
   return crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, IV);
-}
-
-/**
- * @param {Buffer} buf 
- * @param {Buffer} key 
- */
-const decrypt = (buf, key) => {
-  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, IV);
-  const decrypted = Buffer.concat([decipher.update(buf), decipher.final()]);
-  return decrypted;
 }
 
 /**
