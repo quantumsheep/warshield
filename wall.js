@@ -95,6 +95,9 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
 
         // Pipe warshield file into original file
         target_rs.pipe(source_ws).on('finish', () => {
+          target_rs.close();
+          source_ws.close();
+          
           fs.unlink(targetpath, () => resolve(true));
         });
       });
@@ -143,6 +146,9 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
 
             // Pipe warshield file into original file
             target_rs.pipe(source_ws).on('finish', () => {
+              target_rs.close();
+              source_ws.close();
+
               fs.unlink(targetpath, () => resolve(true));
             });
           });
