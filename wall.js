@@ -79,7 +79,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
       const stream = source_rs.pipe(cipher.stream).pipe(target_ws);
 
       stream.on('finish', () => {
-        decipher.end();
+        cipher.stream.end();
         source_rs.close();
         target_ws.close();
 
@@ -97,7 +97,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
         target_rs.pipe(source_ws).on('finish', () => {
           target_rs.close();
           source_ws.close();
-          
+
           fs.unlink(targetpath, () => resolve(true));
         });
       });
