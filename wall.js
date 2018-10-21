@@ -105,16 +105,19 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
       source_rs.on('open', async fd => {
         try {
           const read = util.promisify(fs.read);
-          const { buffer: salt } = await read(fd, Buffer.alloc(64), 0, 64, 0);
-          const { buffer: iv } = await read(fd, Buffer.alloc(16), 0, 16, 64);
-          const { buffer: tag } = await read(fd, Buffer.alloc(16), 0, 16, 80);
-          const { buffer: rounds } = await read(fd, Buffer.alloc(4), 0, 4, 96);
+
+          const [{ buffer: salt }, { buffer: iv }, { buffer: tag }, { buffer: rounds }] = await Promise.all([
+            read(fd, Buffer.alloc(64), 0, 64, 0),
+            read(fd, Buffer.alloc(16), 0, 16, 64),
+            read(fd, Buffer.alloc(16), 0, 16, 80),
+            read(fd, Buffer.alloc(4), 0, 4, 96),
+          ]);
 
           const [derivedKey] = await generateKey(key, parseInt(rounds), salt);
 
           // Create cipher stream
           const decipher = decryptStream(derivedKey, iv);
-          decipher.on('error', ERROR);
+          decipher.stream.on('error', ERROR);
 
           decipher.setAuthTag(tag);
 
@@ -123,7 +126,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
           // Pipe original file into cipher and cipher into warshield file
           const stream = data_rs.pipe(decipher).pipe(target_ws);
 
-          stream.on('finish', () => {
+          decipher.on('finish', () => {
             const target_rs = fs.createReadStream(target_ws.path).on('error', ERROR);
             const source_ws = fs.createWriteStream(source_rs.path).on('error', ERROR);
 
