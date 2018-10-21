@@ -1,6 +1,6 @@
 {
   "name": "warshield",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Warshield is a file encryption and decryption CLI using 3DES algorithm",
   "bin": {
     "warshield": "./warshield.js"
