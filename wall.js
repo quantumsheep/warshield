@@ -51,11 +51,11 @@ const decryptStream = (key, iv) => {
 const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, reject) => {
   // Generate warshield file id
   const id = crypto.randomBytes(8).toString('hex');
-  const targetname = `${original}.${id}.warshield`;
+  const targetpath = `${original}.${id}.warshield`;
 
   // Error function
   const ERROR = err => {
-    fs.unlink(targetname, () => { });
+    fs.unlink(targetpath, () => { });
     reject(err);
   }
 
@@ -69,7 +69,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
       cipher.stream.on('error', ERROR);
 
       const source_rs = fs.createReadStream(original).on('error', ERROR);
-      const target_ws = fs.createWriteStream(targetname).on('error', ERROR);
+      const target_ws = fs.createWriteStream(targetpath).on('error', ERROR);
 
       if (!source_rs.readable || !target_ws.writable) {
         return reject(false);
@@ -79,8 +79,12 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
       const stream = source_rs.pipe(cipher.stream).pipe(target_ws);
 
       stream.on('finish', () => {
-        const target_rs = fs.createReadStream(target_ws.path).on('error', ERROR);
-        const source_ws = fs.createWriteStream(source_rs.path).on('error', ERROR);
+        decipher.end();
+        source_rs.close();
+        target_ws.close();
+
+        const target_rs = fs.createReadStream(targetpath).on('error', ERROR);
+        const source_ws = fs.createWriteStream(original).on('error', ERROR);
 
         const tag = cipher.stream.getAuthTag();
 
@@ -91,14 +95,13 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
 
         // Pipe warshield file into original file
         target_rs.pipe(source_ws).on('finish', () => {
-          fs.unlink(target_ws.path, () => resolve(true));
+          fs.unlink(targetpath, () => resolve(true));
         });
       });
     } else {
       const source_rs = fs.createReadStream(original, { end: 100 }).on('error', ERROR);
-      const target_ws = fs.createWriteStream(targetname).on('error', ERROR);
 
-      if (!source_rs.readable || !target_ws.writable) {
+      if (!source_rs.readable) {
         return reject(false);
       }
 
@@ -106,12 +109,13 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
         try {
           const read = util.promisify(fs.read);
 
-          const [{ buffer: salt }, { buffer: iv }, { buffer: tag }, { buffer: rounds }] = await Promise.all([
-            read(fd, Buffer.alloc(64), 0, 64, 0),
-            read(fd, Buffer.alloc(16), 0, 16, 64),
-            read(fd, Buffer.alloc(16), 0, 16, 80),
-            read(fd, Buffer.alloc(4), 0, 4, 96),
-          ]);
+          const { buffer: bufs } = await read(fd, Buffer.alloc(100), 0, 100, 0);
+          const salt = bufs.slice(0, 64);
+          const iv = bufs.slice(64, 80);
+          const tag = bufs.slice(80, 96);
+          const rounds = bufs.slice(96, 100);
+
+          source_rs.close();
 
           const [derivedKey] = await generateKey(key, parseInt(rounds), salt);
 
@@ -120,17 +124,26 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
           decipher.setAuthTag(tag);
 
           const data_rs = fs.createReadStream(original, { start: 100 }).on('error', ERROR);
+          const target_ws = fs.createWriteStream(targetpath).on('error', ERROR);
+
+          if (!data_rs.readable || !target_ws.writable) {
+            return reject(false);
+          }
 
           // Pipe original file into cipher and cipher into warshield file
           const stream = data_rs.pipe(decipher).pipe(target_ws);
 
           stream.on('finish', () => {
-            const target_rs = fs.createReadStream(target_ws.path).on('error', ERROR);
-            const source_ws = fs.createWriteStream(source_rs.path).on('error', ERROR);
+            decipher.end();
+            data_rs.close();
+            target_ws.close();
+
+            const target_rs = fs.createReadStream(targetpath).on('error', ERROR);
+            const source_ws = fs.createWriteStream(original).on('error', ERROR);
 
             // Pipe warshield file into original file
             target_rs.pipe(source_ws).on('finish', () => {
-              fs.unlink(target_ws.path, () => resolve(true));
+              fs.unlink(targetpath, () => resolve(true));
             });
           });
         } catch (e) {
