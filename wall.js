@@ -116,9 +116,7 @@ const cipherizeFile = (original, key, encrypt) => new Promise(async (resolve, re
           const [derivedKey] = await generateKey(key, parseInt(rounds), salt);
 
           // Create cipher stream
-          const decipher = decryptStream(derivedKey, iv);
-          decipher.on('error', ERROR);
-
+          const decipher = decryptStream(derivedKey, iv).on('error', ERROR);
           decipher.setAuthTag(tag);
 
           const data_rs = fs.createReadStream(original, { start: 100 }).on('error', ERROR);
