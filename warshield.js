@@ -1,22 +1,39 @@
 #!/usr/bin/env node
 
-let [, , action, file, key] = process.argv;
+const program = require('commander');
+const fs = require('fs');
+const util = require('util');
+const wall = require('./wall');
+const { Writable } = require('stream');
+const { walk, arrayLoop } = require('./helpers');
 
-if (!action || !file || !key) {
-  console.log('warshield (encrypt|decrypt) (file) (key)');
-  process.exit();
-}
+function cipher(action, file, verbose = false) {
+  const readline = require('readline');
 
-action = action.toLowerCase();
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
-if (action === 'encrypt' || action === 'decrypt') {
-  const fs = require('fs');
-  const util = require('util');
-  const wall = require('./wall');
-  const { walk, arrayLoop } = require('./helpers');
+  let i = false;
 
-  (async () => {
+  rl.query = 'Password: ';
+
+  rl._writeToOutput = function _writeToOutput(stringToWrite) {
+    if (i) {
+      rl.output.write(`\x1B[2K\x1B[200D${rl.query}`);
+    } else {
+      rl.output.write(stringToWrite);
+    }
+
+    i = true;
+  };
+
+  process.stdout.write(rl.query)
+  rl.question(rl.query, async key => {
     try {
+      rl.close();
+
       const stat = await util.promisify(fs.stat)(file);
 
       const files = stat.isDirectory() ? await walk(file) : [file];
@@ -41,7 +58,22 @@ if (action === 'encrypt' || action === 'decrypt') {
     } catch (e) {
       console.error(e.message);
     }
-  })();
-} else {
-  console.log('warshield: unknown action');
+  });
 }
+
+program
+  .version('2.1.1', '-V, --version')
+  .usage('[options] <mode> <dir> <key>')
+  .option('-v, --verbose', 'enable verbosity');
+
+program
+  .command('encrypt <dir>')
+  .description('encrypt a file or all files in a directory')
+  .action((dir, key, options) => cipher('encrypt', dir, key, options && options.verbose));
+
+program
+  .command('decrypt <dir> [options]')
+  .description('decrypt a file or all files in a directory')
+  .action((dir, key, options) => cipher('decrypt', dir, key, options && options.verbose));
+
+program.parse(process.argv);
