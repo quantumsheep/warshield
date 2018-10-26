@@ -31,33 +31,46 @@ function cipher(action, file, verbose = false) {
 
   process.stdout.write(rl.query)
   rl.question(rl.query, async key => {
-    try {
-      rl.close();
+    i = false;
+    rl.query = 'Confirm password: ';
 
-      const stat = await util.promisify(fs.stat)(file);
+    process.stdout.write(`\n${rl.query}`);
+    rl.question(rl.query, async key2 => {
+      try {
+        process.stdout.write('\n');
 
-      const files = stat.isDirectory() ? await walk(file) : [file];
-
-      const loop = arrayLoop(files, file => {
-        return wall.cipherizeFile(file, key, action === 'encrypt')
-          .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}`))
-          .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}`));
-      });
-
-      const repeat = () => {
-        const wait = loop.next();
-
-        if (wait.value) {
-          wait.value.then(repeat);
+        if (key !== key2) {
+          console.log('\nPasswords does not match.');
+          return process.exit();
         }
-      }
 
-      for (let i = 0; i < 5; i++) {
-        repeat();
+        rl.close();
+
+        const stat = await util.promisify(fs.stat)(file);
+
+        const files = stat.isDirectory() ? await walk(file) : [file];
+
+        const loop = arrayLoop(files, file => {
+          return wall.cipherizeFile(file, key, action === 'encrypt')
+            .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}`))
+            .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}`));
+        });
+
+        const repeat = () => {
+          const wait = loop.next();
+
+          if (wait.value) {
+            wait.value.then(repeat);
+          }
+        }
+
+        for (let i = 0; i < 5; i++) {
+          repeat();
+        }
+      } catch (e) {
+        console.error(e.message);
       }
-    } catch (e) {
-      console.error(e.message);
-    }
+    });
   });
 }
 
@@ -67,13 +80,13 @@ program
   .option('-v, --verbose', 'enable verbosity');
 
 program
-  .command('encrypt <dir>')
+  .command('encrypt <file>')
   .description('encrypt a file or all files in a directory')
-  .action((dir, key, options) => cipher('encrypt', dir, key, options && options.verbose));
+  .action((file, key, options) => cipher('encrypt', file, key, options && options.verbose));
 
 program
-  .command('decrypt <dir> [options]')
+  .command('decrypt <file> [options]')
   .description('decrypt a file or all files in a directory')
-  .action((dir, key, options) => cipher('decrypt', dir, key, options && options.verbose));
+  .action((file, key, options) => cipher('decrypt', file, key, options && options.verbose));
 
 program.parse(process.argv);
