@@ -7,7 +7,7 @@ const wall = require('./wall');
 const { Writable } = require('stream');
 const { walk, arrayLoop } = require('./helpers');
 
-function cipher(action, file, verbose = false) {
+function gate(action, file, verbose = false) {
   const readline = require('readline');
 
   const rl = readline.createInterface({
@@ -31,14 +31,12 @@ function cipher(action, file, verbose = false) {
 
   process.stdout.write(rl.query)
   rl.question(rl.query, async key => {
-    i = false;
-    rl.query = 'Confirm password: ';
+    if (action === 'encrypt') {
+      i = false;
+      rl.query = 'Confirm password: ';
 
-    process.stdout.write(`\n${rl.query}`);
-    rl.question(rl.query, async key2 => {
-      try {
-        process.stdout.write('\n');
-
+      process.stdout.write(`\n${rl.query}`);
+      rl.question(rl.query, async key2 => {
         if (key !== key2) {
           console.log('\nPasswords does not match.');
           return process.exit();
@@ -46,32 +44,44 @@ function cipher(action, file, verbose = false) {
 
         rl.close();
 
-        const stat = await util.promisify(fs.stat)(file);
+        cipher(action, file, key, verbose);
+      });
+    } else {
+      rl.close();
 
-        const files = stat.isDirectory() ? await walk(file) : [file];
-
-        const loop = arrayLoop(files, file => {
-          return wall.cipherizeFile(file, key, action === 'encrypt')
-            .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}`))
-            .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}`));
-        });
-
-        const repeat = () => {
-          const wait = loop.next();
-
-          if (wait.value) {
-            wait.value.then(repeat);
-          }
-        }
-
-        for (let i = 0; i < 5; i++) {
-          repeat();
-        }
-      } catch (e) {
-        console.error(e.message);
-      }
-    });
+      cipher(action, file, key, verbose);
+    }
   });
+}
+
+async function cipher(action, file, key, verbose = false) {
+  try {
+    process.stdout.write('\n');
+    
+    const stat = await util.promisify(fs.stat)(file);
+
+    const files = stat.isDirectory() ? await walk(file) : [file];
+
+    const loop = arrayLoop(files, file => {
+      return wall.cipherizeFile(file, key, action === 'encrypt')
+        .then(() => console.log(`\x1b[32mDone ${action}ing\x1b[0m - ${file}`))
+        .catch(() => console.log(`\x1b[31mFAILED ${action}ing\x1b[0m - ${file}`));
+    });
+
+    const repeat = () => {
+      const wait = loop.next();
+
+      if (wait.value) {
+        wait.value.then(repeat);
+      }
+    }
+
+    for (let i = 0; i < 5; i++) {
+      repeat();
+    }
+  } catch (e) {
+    console.error(e.message);
+  }
 }
 
 program
@@ -82,11 +92,11 @@ program
 program
   .command('encrypt <file>')
   .description('encrypt a file or all files in a directory')
-  .action((file, key, options) => cipher('encrypt', file, key, options && options.verbose));
+  .action((file, key, options) => gate('encrypt', file, key, options && options.verbose));
 
 program
   .command('decrypt <file> [options]')
   .description('decrypt a file or all files in a directory')
-  .action((file, key, options) => cipher('decrypt', file, key, options && options.verbose));
+  .action((file, key, options) => gate('decrypt', file, key, options && options.verbose));
 
 program.parse(process.argv);
