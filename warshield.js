@@ -4,7 +4,6 @@ const program = require('commander');
 const fs = require('fs');
 const util = require('util');
 const wall = require('./wall');
-const { Writable } = require('stream');
 const { walk, arrayLoop } = require('./helpers');
 
 function gate(action, file, verbose = false) {
@@ -57,7 +56,7 @@ function gate(action, file, verbose = false) {
 async function cipher(action, file, key, verbose = false) {
   try {
     process.stdout.write('\n');
-    
+
     const stat = await util.promisify(fs.stat)(file);
 
     const files = stat.isDirectory() ? await walk(file) : [file];
