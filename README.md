@@ -1,4 +1,4 @@
-![Warshield](https://imgur.com/a/x22VY2U)
+![Warshield](https://i.imgur.com/hmaHsmi.png)
 
 Warshield is a file encryption and decryption CLI using AES 256 algorithm.
 
