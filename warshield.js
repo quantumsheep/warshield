@@ -98,4 +98,10 @@ program
   .description('decrypt a file or all files in a directory')
   .action((file, key, options) => gate('decrypt', file, key, options && options.verbose));
 
+program.action(() => program.help());
+
 program.parse(process.argv);
+
+if (process.argv.length < 3) {
+  program.help();
+}
