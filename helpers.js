@@ -2,7 +2,9 @@ const path = require('path');
 const fs = require('fs');
 const util = require('util');
 
-const walk = async (dir, filelist = []) => {
+const eraseline = '\u001b[1G\u001b[2K';
+
+const walk = async (dir, verbose = false, filelist = [], failed = 0) => {
   const files = await util.promisify(fs.readdir)(dir);
 
   for (file of files) {
@@ -12,26 +14,31 @@ const walk = async (dir, filelist = []) => {
       const stat = await util.promisify(fs.stat)(filepath);
 
       if (stat.isDirectory()) {
-        filelist = await walk(filepath, filelist);
+        const result = await walk(filepath, verbose, filelist, failed);
+        failed = result.failed;
+        filelist = result.filelist;
       } else {
         filelist.push(filepath);
 
-        if (filepath.length > 50) {
-          console.log(`Added in file queue: ${filepath.slice(0, 25)}[...]${filepath.slice(-25)}`);
+        if (verbose) {
+          console.log(`Added file ${filepath}`);
         } else {
-          console.log(`Added in file queue: ${filepath}`);
+          process.stdout.write(`${eraseline}Crawling directories... ${filename}`);
         }
       }
     } catch (e) {
-      if (filepath.length > 50) {
-        console.log(`\x1b[31mNot added in file queue: ${filepath.slice(0, 25)}[...]${filepath.slice(-25)}\x1b[0m`);
-      } else {
-        console.log(`\x1b[31mNot added in file queue: ${filepath}\x1b[0m`);
+      if (verbose) {
+        console.log(`\x1b[31mCan't add file ${filepath} (access denied)\x1b[0m`);
       }
+
+      failed++;
     }
   }
 
-  return filelist;
+  return {
+    filelist,
+    failed,
+  };
 }
 
 /**
@@ -44,4 +51,4 @@ function* arrayLoop(arr, action) {
   }
 }
 
-module.exports = { walk, arrayLoop };
+module.exports = { walk, arrayLoop, eraseline };
