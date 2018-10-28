@@ -89,7 +89,7 @@ program
   .option('-v, --verbose', 'enable verbosity');
 
 program
-  .command('encrypt <file>')
+  .command('encrypt <file> [options]')
   .description('encrypt a file or all files in a directory')
   .action((file, key, options) => gate('encrypt', file, key, options && options.verbose));
 
