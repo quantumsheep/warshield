@@ -22,13 +22,13 @@ function gate(action, file, verbose = false) {
     }
   }
 
-  rl.question(query, async key => {
+  rl.question(query, key => {
     if (action === 'encrypt') {
       i = false;
       query = 'Confirm password: ';
 
       process.stdout.write('\n');
-      rl.question(query, async key2 => {
+      rl.question(query, key2 => {
         if (key !== key2) {
           console.log('\nPasswords does not match.');
           return process.exit();
