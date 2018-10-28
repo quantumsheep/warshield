@@ -85,7 +85,7 @@ async function cipher(action, file, key, verbose = false) {
 
 program
   .version('2.2.0', '-V, --version')
-  .usage('[options] <mode> <dir> <key>')
+  .usage('[options] <mode> <dir>')
   .option('-v, --verbose', 'enable verbosity');
 
 program
