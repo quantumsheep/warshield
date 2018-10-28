@@ -8,34 +8,27 @@ const { walk, arrayLoop } = require('./helpers');
 
 function gate(action, file, verbose = false) {
   const readline = require('readline');
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const rl = readline.createInterface(process.stdin, process.stdout);
 
   let i = false;
+  let query = 'Password: ';
 
-  rl.query = 'Password: ';
-
-  rl._writeToOutput = function _writeToOutput(stringToWrite) {
+  rl._writeToOutput = stringToWrite => {
     if (i) {
-      rl.output.write(`\x1B[2K\x1B[200D${rl.query}`);
+      rl.output.write(`\x1B[2K\x1B[200D${query}`);
     } else {
       rl.output.write(stringToWrite);
+      i = true;
     }
+  }
 
-    i = true;
-  };
-
-  process.stdout.write(rl.query)
-  rl.question(rl.query, async key => {
+  rl.question(query, async key => {
     if (action === 'encrypt') {
       i = false;
-      rl.query = 'Confirm password: ';
+      query = 'Confirm password: ';
 
-      process.stdout.write(`\n${rl.query}`);
-      rl.question(rl.query, async key2 => {
+      process.stdout.write('\n');
+      rl.question(query, async key2 => {
         if (key !== key2) {
           console.log('\nPasswords does not match.');
           return process.exit();
