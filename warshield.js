@@ -6,7 +6,7 @@ const util = require('util');
 const wall = require('./wall');
 const { walk, arrayLoop, eraseline } = require('./helpers');
 
-function gate(mode, file, verbose = false) {
+function gate(mode, files, verbose = false) {
   const readline = require('readline');
   const rl = readline.createInterface(process.stdin, process.stdout);
 
@@ -37,13 +37,17 @@ function gate(mode, file, verbose = false) {
         rl.close();
 
         process.stdout.write(`${eraseline}\b${eraseline}`);
-        cipher(mode, file, key, verbose);
+        files.forEach(file => {
+          cipher(mode, file, key, verbose);
+        });
       });
     } else {
       rl.close();
 
       process.stdout.write(eraseline);
-      cipher(mode, file, key, verbose);
+      files.forEach(file => {
+        cipher(mode, file, key, verbose);
+      });
     }
   });
 }
@@ -131,16 +135,16 @@ program
   .option('-v, --verbose', 'enable verbosity');
 
 program
-  .command('encrypt <file>')
+  .command('encrypt <file> [moreFiles...]')
   .option('-v, --verbose', 'enable verbosity')
   .description('encrypt a file or all files in a directory')
-  .action((file, cmd) => gate('encrypt', file, cmd.parent.verbose === true));
+  .action((file, moreFiles, cmd) => gate('encrypt', [file].concat(moreFiles), cmd.parent.verbose === true));
 
 program
-  .command('decrypt <file>')
+  .command('decrypt <file> [moreFiles...]')
   .option('-v, --verbose', 'enable verbosity')
   .description('decrypt a file or all files in a directory')
-  .action((file, cmd) => gate('decrypt', file, cmd.parent.verbose === true));
+  .action((file, moreFiles, cmd) => gate('decrypt', [file].concat(moreFiles), cmd.parent.verbose === true));
 
 program.action(() => program.help());
 
