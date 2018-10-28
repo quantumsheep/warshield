@@ -1,4 +1,5 @@
-# WarShield
+![Warshield]()
+
 Warshield is a file encryption and decryption CLI using AES 256 algorithm.
 
 # How to install
