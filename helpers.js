@@ -2,8 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const util = require('util');
 
-const eraseline = '\u001b[1G\u001b[2K';
-
 const walk = async (dir, verbose = false, filelist = [], failed = 0) => {
   const files = await util.promisify(fs.readdir)(dir);
 
@@ -44,6 +42,7 @@ const walk = async (dir, verbose = false, filelist = [], failed = 0) => {
 /**
  * @param {any[]} arr 
  * @param {(...any?) => any} action 
+ * @returns {IterableIterator<Promise<string>>} 
  */
 function* arrayLoop(arr, action) {
   for (a of arr) {
@@ -51,4 +50,4 @@ function* arrayLoop(arr, action) {
   }
 }
 
-module.exports = { walk, arrayLoop, eraseline };
+module.exports = { walk, arrayLoop };
