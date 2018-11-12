@@ -131,7 +131,12 @@ program
 
         const diff = process.hrtime(start);
 
-        process.stdout.write('\r\n');
+        if (verbose) {
+          process.stdout.write('\r\n');
+        } else {
+          process.stdout.write('\u001b[1G\u001b[2K');
+        }
+
         console.log(`Finished decrypting files!`);
         console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
         console.log(`Total decrypted files: ${done}`);
@@ -233,6 +238,7 @@ program
         } else {
           process.stdout.write('\u001b[1G\u001b[2K');
         }
+        
         console.log(`Finished decrypting files!`);
         console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
         console.log(`Total decrypted files: ${done}`);
