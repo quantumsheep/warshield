@@ -56,9 +56,9 @@ function encryptFile(file, key) {
     const targetpath = `${file}.${id}.warshield`;
 
     // Error function
-    const ERROR = err => {
+    const ERROR = (err = "") => {
       fs.unlink(targetpath, () => { });
-      reject(err);
+      reject(err.message ? err.message : err);
     }
 
     const rounds = Math.floor(Math.random() * (MAX_ROUNDS - MIN_ROUNDS) + MIN_ROUNDS);
@@ -98,7 +98,7 @@ function encryptFile(file, key) {
         target_rs.close();
         source_ws.close();
 
-        fs.unlink(targetpath, () => resolve(true));
+        fs.unlink(targetpath, err => resolve(err));
       });
     });
   });
@@ -115,15 +115,15 @@ function decryptFile(file, key) {
     const targetpath = `${file}.${id}.warshield`;
 
     // Error function
-    const ERROR = err => {
+    const ERROR = (err = "") => {
       fs.unlink(targetpath, () => { });
-      reject(err);
+      reject(err.message ? err.message : err);
     }
 
     const source_rs = fs.createReadStream(file, { end: 100 }).on('error', ERROR);
 
     if (!source_rs.readable) {
-      return reject(false);
+      return reject('File not readable');
     }
 
     source_rs.on('open', async fd => {
@@ -137,6 +137,10 @@ function decryptFile(file, key) {
         const rounds = bufs.slice(96, 100);
 
         source_rs.close();
+
+        if (isNaN(rounds)) {
+          reject(`File broken or already decrypted`);
+        }
 
         const [derivedKey] = await generateKey(key, parseInt(rounds), salt);
 
@@ -167,7 +171,7 @@ function decryptFile(file, key) {
             target_rs.close();
             source_ws.close();
 
-            fs.unlink(targetpath, () => resolve(true));
+            fs.unlink(targetpath, err => resolve(err));
           });
         });
       } catch (e) {
@@ -188,12 +192,21 @@ function encryptRecursive(file, key) {
 
       if (stat.isDirectory()) {
         getFiles(file)
-          .on('found', file => files.push(file))
-          .on('failed', file => em.emit('failed', file))
+          .on('found', file => {
+            files.push(file);
+            em.emit('crawl-found', file);
+          })
+          .on('failed', file => em.emit('crawl-failed', file))
           .on('end', () => {
             const loop = arrayLoop(files, file => {
               return encryptFile(file, key)
-                .then(() => em.emit('done', file))
+                .then(err => {
+                  em.emit('done', file);
+
+                  if (err) {
+                    em.emit('failed-delete', `${file}.warshield`);
+                  }
+                })
                 .catch(() => em.emit('failed', file));
             });
 
@@ -245,15 +258,24 @@ function decryptRecursive(file, key) {
 
       if (stat.isDirectory()) {
         getFiles(file)
-          .on('found', file => files.push(file))
-          .on('failed', file => em.emit('failed', file))
+          .on('found', file => {
+            files.push(file);
+            em.emit('crawl-found', file);
+          })
+          .on('failed', file => em.emit('crawl-failed', file))
           .on('end', () => {
             let done = 0;
 
             const loop = arrayLoop(files, file => {
               return decryptFile(file, key)
-                .then(() => em.emit('done', file))
-                .catch(() => em.emit('failed', file));
+                .then(err => {
+                  em.emit('done', file);
+
+                  if (err) {
+                    em.emit('failed-delete', `${file}.warshield`, err);
+                  }
+                })
+                .catch(err => em.emit('failed', file, err));
             });
 
             const end = () => {
