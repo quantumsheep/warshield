@@ -3,11 +3,21 @@ const { EventEmitter } = require('events');
 const util = require('util');
 const crypto = require('crypto');
 const path = require('path');
-const { arrayLoop } = require('./helpers');
 
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const MIN_ROUNDS = 3000;
 const MAX_ROUNDS = 9000;
+
+/**
+ * @param {any[]} arr 
+ * @param {(...any?) => any} action 
+ * @returns {IterableIterator<Promise<string>>} 
+ */
+function* arrayLoop(arr, action) {
+  for (a of arr) {
+    yield action(a);
+  }
+}
 
 /**
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
