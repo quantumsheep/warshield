@@ -1,6 +1,7 @@
 const program = require('commander');
 const warshield = require('./warshield');
 const Reader = require('./src/Reader');
+const Spinner = require('./src/Spinner');
 
 async function ask_password(confirmation = true) {
   const reader = new Reader();
@@ -60,31 +61,21 @@ program
       let done = 0;
       let failed = 0;
 
+      if (!verbose) {
+        var spinner = new Spinner();
+        spinner.query = "Starting encryption...";
+        spinner.start();
+      }
+
       const start = process.hrtime();
 
       const encryption = warshield.encryptRecursive(file, key);
-
-      let query = "";
-      let timer;
-
-      if (!verbose) {
-        const states = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-        let state = 0;
-
-        timer = setInterval(() => {
-          process.stdout.write(`\u001b[1G\u001b[2K${states[state]} ${query}`);
-
-          if (++state >= states.length) {
-            state = 0;
-          }
-        }, 80);
-      }
 
       encryption.on('crawl-found', filename => {
         if (verbose) {
           display_verbose("Added file", filename);
         } else {
-          query = `Crawling files... ${filename}`;
+          spinner.query = `Crawling files... ${filename}`;
         }
       });
 
@@ -94,7 +85,7 @@ program
         if (verbose) {
           display_verbose("Failed adding", filename, trace, err);
         } else {
-          query = `Crawling files... ${filename}`;
+          spinner.query = `Crawling files... ${filename}`;
         }
       });
 
@@ -110,7 +101,7 @@ program
         if (verbose) {
           display_verbose("\x1b[32mDone encrypting", filename);
         } else {
-          query = `Encrypting files... ${filename}`;
+          spinner.query = `Encrypting files... ${filename}`;
         }
       });
 
@@ -120,13 +111,13 @@ program
         if (verbose) {
           display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
         } else {
-          query = `Encrypting files... ${filename}`;
+          spinner.query = `Encrypting files... ${filename}`;
         }
       });
 
       encryption.on('end', () => {
         if (timer) {
-          clearInterval(timer);
+          spinner.stop();
         }
 
         const diff = process.hrtime(start);
@@ -162,31 +153,21 @@ program
       let done = 0;
       let failed = 0;
 
+      if (!verbose) {
+        var spinner = new Spinner();
+        spinner.query = "Starting encryption...";
+        spinner.start();
+      }
+
       const start = process.hrtime();
 
       const decryption = warshield.decryptRecursive(file, key);
-
-      let query = "";
-      let timer;
-
-      if (!verbose) {
-        const states = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-        let state = 0;
-
-        timer = setInterval(() => {
-          process.stdout.write(`\u001b[1G\u001b[2K${states[state]} ${query}`);
-
-          if (++state >= states.length) {
-            state = 0;
-          }
-        }, 80);
-      }
 
       decryption.on('crawl-found', filename => {
         if (verbose) {
           display_verbose("Failed adding", filename);
         } else {
-          query = `Crawling files... ${filename}`;
+          spinner.query = `Crawling files... ${filename}`;
         }
       });
 
@@ -196,7 +177,7 @@ program
         if (verbose) {
           display_verbose("Failed adding", filename, trace, err);
         } else {
-          query = `Crawling files... ${filename}`;
+          spinner.query = `Crawling files... ${filename}`;
         }
       });
 
@@ -212,7 +193,7 @@ program
         if (verbose) {
           display_verbose("\x1b[32mDone decrypting", filename);
         } else {
-          query = `Decrypting files... ${filename}`;
+          spinner.query = `Decrypting files... ${filename}`;
         }
       });
 
@@ -222,13 +203,13 @@ program
         if (verbose) {
           display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
         } else {
-          query = `Decrypting files... ${filename}`;
+          spinner.query = `Decrypting files... ${filename}`;
         }
       });
 
       decryption.on('end', () => {
         if (timer) {
-          clearInterval(timer);
+          spinner.stop();
         }
 
         const diff = process.hrtime(start);
@@ -238,7 +219,7 @@ program
         } else {
           process.stdout.write('\u001b[1G\u001b[2K');
         }
-        
+
         console.log(`Finished decrypting files!`);
         console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
         console.log(`Total decrypted files: ${done}`);
