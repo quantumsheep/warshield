@@ -196,65 +196,65 @@ function decryptFile(file, key) {
 function encryptRecursive(file, key) {
   const em = new EventEmitter();
 
-  (async () => {
-    try {
-      const stat = await util.promisify(fs.stat)(file);
-
-      const files = [];
-
-      if (stat.isDirectory()) {
-        getFiles(file)
-          .on('found', file => {
-            files.push(file);
-            em.emit('crawl-found', file);
-          })
-          .on('failed', file => em.emit('crawl-failed', file))
-          .on('end', () => {
-            const loop = arrayLoop(files, file => {
-              return encryptFile(file, key)
-                .then(err => {
-                  em.emit('done', file);
-
-                  if (err) {
-                    em.emit('failed-delete', `${file}.warshield`);
-                  }
-                })
-                .catch(() => em.emit('failed', file));
-            });
-
-            let done = 0;
-
-            const end = () => {
-              if (++done >= files.length) {
-                em.emit('end');
-              }
-            }
-
-            const next = () => {
-              const wait = loop.next();
-
-              if (wait.value) {
-                wait.value.finally(() => {
-                  next();
-                  end();
-                });
-              }
-            }
-
-            for (let i = 0; i < 5; i++) {
-              next();
-            }
-          });
-      } else {
-        encryptFile(file, key)
-          .then(() => em.emit('done', file))
-          .catch(() => em.emit('failed', file))
-          .finally(() => em.emit('end'));
-      }
-    } catch (e) {
-      console.error(e.message);
+  fs.stat(file, (err, stat) => {
+    if (err) {
+      em.emit('crawl-failed', file, err.message);
+      em.emit('end');
+      return;
     }
-  })();
+
+    const files = [];
+
+    if (stat.isDirectory()) {
+      getFiles(file)
+        .on('found', file => {
+          files.push(file);
+          em.emit('crawl-found', file);
+        })
+        .on('failed', file => em.emit('crawl-failed', file))
+        .on('end', () => {
+          const loop = arrayLoop(files, file => {
+            return encryptFile(file, key)
+              .then(err => {
+                em.emit('done', file);
+
+                if (err) {
+                  em.emit('failed-delete', `${file}.warshield`);
+                }
+              })
+              .catch(() => em.emit('failed', file));
+          });
+
+          let done = 0;
+
+          const end = () => {
+            if (++done >= files.length) {
+              em.emit('end');
+            }
+          }
+
+          const next = () => {
+            const wait = loop.next();
+
+            if (wait.value) {
+              wait.value.finally(() => {
+                next();
+                end();
+              });
+            }
+          }
+
+          for (let i = 0; i < 5; i++) {
+            next();
+          }
+        });
+    } else {
+      encryptFile(file, key)
+        .then(() => em.emit('done', file))
+        .catch(() => em.emit('failed', file))
+        .finally(() => em.emit('end'));
+    }
+  });
 
   return em;
 }
@@ -262,65 +262,65 @@ function encryptRecursive(file, key) {
 function decryptRecursive(file, key) {
   const em = new EventEmitter();
 
-  (async () => {
-    try {
-      const stat = await util.promisify(fs.stat)(file);
-
-      const files = [];
-
-      if (stat.isDirectory()) {
-        getFiles(file)
-          .on('found', file => {
-            files.push(file);
-            em.emit('crawl-found', file);
-          })
-          .on('failed', file => em.emit('crawl-failed', file))
-          .on('end', () => {
-            let done = 0;
-
-            const loop = arrayLoop(files, file => {
-              return decryptFile(file, key)
-                .then(err => {
-                  em.emit('done', file);
-
-                  if (err) {
-                    em.emit('failed-delete', `${file}.warshield`, err);
-                  }
-                })
-                .catch(err => em.emit('failed', file, err));
-            });
-
-            const end = () => {
-              if (++done >= files.length) {
-                em.emit('end');
-              }
-            }
-
-            const next = () => {
-              const wait = loop.next();
-
-              if (wait.value) {
-                wait.value.finally(() => {
-                  next();
-                  end();
-                });
-              }
-            }
-
-            for (let i = 0; i < 5; i++) {
-              next();
-            }
-          });
-      } else {
-        decryptFile(file, key)
-          .then(() => em.emit('done', file))
-          .catch(() => em.emit('failed', file))
-          .finally(() => em.emit('end'));
-      }
-    } catch (e) {
-      console.error(e.message);
+  fs.stat(file, (err, stat) => {
+    if (err) {
+      em.emit('crawl-failed', file, err.message);
+      em.emit('end');
+      return;
     }
-  })();
+
+    const files = [];
+
+    if (stat.isDirectory()) {
+      getFiles(file)
+        .on('found', file => {
+          files.push(file);
+          em.emit('crawl-found', file);
+        })
+        .on('failed', file => em.emit('crawl-failed', file))
+        .on('end', () => {
+          let done = 0;
+
+          const loop = arrayLoop(files, file => {
+            return decryptFile(file, key)
+              .then(err => {
+                em.emit('done', file);
+
+                if (err) {
+                  em.emit('failed-delete', `${file}.warshield`, err);
+                }
+              })
+              .catch(err => em.emit('failed', file, err));
+          });
+
+          const end = () => {
+            if (++done >= files.length) {
+              em.emit('end');
+            }
+          }
+
+          const next = () => {
+            const wait = loop.next();
+
+            if (wait.value) {
+              wait.value.finally(() => {
+                next();
+                end();
+              });
+            }
+          }
+
+          for (let i = 0; i < 5; i++) {
+            next();
+          }
+        });
+    } else {
+      decryptFile(file, key)
+        .then(() => em.emit('done', file))
+        .catch(() => em.emit('failed', file))
+        .finally(() => em.emit('end'));
+    }
+  });
 
   return em;
 }
