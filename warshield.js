@@ -24,20 +24,22 @@ function* arrayLoop(arr, action) {
  * @param {number} rounds 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} salt 
  */
-const generateKey = (key, rounds, salt = null) => new Promise((resolve, reject) => {
-  salt = salt || crypto.randomBytes(64);
+function generateKey(key, rounds, salt = null) {
+  return new Promise((resolve, reject) => {
+    salt = salt || crypto.randomBytes(64);
 
-  crypto.pbkdf2(key, salt, rounds, 32, 'sha512', (err, derivedKey) => {
-    if (err) return reject(err);
+    crypto.pbkdf2(key, salt, rounds, 32, 'sha512', (err, derivedKey) => {
+      if (err) return reject(err);
 
-    resolve([derivedKey, salt]);
+      resolve([derivedKey, salt]);
+    });
   });
-});
+}
 
 /**
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  */
-const encryptStream = (key) => {
+function encryptStream(key) {
   const iv = crypto.randomBytes(16);
   const stream = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
 
@@ -51,7 +53,7 @@ const encryptStream = (key) => {
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} iv 
  */
-const decryptStream = (key, iv) => {
+function decryptStream(key, iv) {
   return crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
 }
 
