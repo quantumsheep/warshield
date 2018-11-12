@@ -116,7 +116,7 @@ program
       });
 
       encryption.on('end', () => {
-        if (timer) {
+        if (spinner) {
           spinner.stop();
         }
 
@@ -208,7 +208,7 @@ program
       });
 
       decryption.on('end', () => {
-        if (timer) {
+        if (spinner) {
           spinner.stop();
         }
 
