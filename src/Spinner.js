@@ -15,12 +15,16 @@ class Spinner {
         i = 0;
       }
     }, 80);
+
+    return this;
   }
 
   stop() {
     if (this.timer) {
       clearInterval(this.timer);
     }
+
+    return this;
   }
 }
 
