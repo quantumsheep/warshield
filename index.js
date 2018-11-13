@@ -62,8 +62,7 @@ program
       let failed = 0;
 
       if (!verbose) {
-        var spinner = new Spinner();
-        spinner.query = "Starting encryption...";
+        var spinner = new Spinner("Starting encryption...");
         spinner.start();
       }
 
@@ -154,8 +153,7 @@ program
       let failed = 0;
 
       if (!verbose) {
-        var spinner = new Spinner();
-        spinner.query = "Starting encryption...";
+        var spinner = new Spinner("Starting encryption...");
         spinner.start();
       }
 

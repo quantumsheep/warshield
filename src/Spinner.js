@@ -1,6 +1,6 @@
 class Spinner {
-  constructor() {
-    this.query = "";
+  constructor(query = "") {
+    this.query = query;
     this.timer;
   }
 
