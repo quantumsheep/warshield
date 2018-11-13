@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const program = require('commander');
 const warshield = require('./warshield');
 const Reader = require('./src/Reader');
