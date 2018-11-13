@@ -14,7 +14,7 @@
     "file"
   ],
   "bin": {
-    "warshield": "./index.js"
+    "warshield": "./cli.js"
   },
   "contributors": [
     {
