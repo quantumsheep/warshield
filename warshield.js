@@ -328,7 +328,7 @@ function decryptRecursive(file, key) {
 /**
  * @param {string} directory 
  */
-function getFiles(directory, master = true) {
+function getFiles(directory) {
   const em = new EventEmitter();
 
   fs.readdir(directory, (err, files) => {
