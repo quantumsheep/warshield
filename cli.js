@@ -35,14 +35,16 @@ async function ask_password(confirmation = true) {
  * @param {string} error 
  */
 function display_verbose(message, filename, trace = false, error = "") {
-  process.stdout.write(`${message}\x1b[0m `);
-  process.stdout.write(`"${filename}"`);
+  const stream = error ? process.stderr : process.stdout;
+
+  stream.write(`${message}\x1b[0m `);
+  stream.write(`"${filename}"`);
 
   if (trace && error) {
-    process.stdout.write(` - \x1b[31m${error}\x1b[0m`);
+    stream.write(` - \x1b[31m${error}\x1b[0m`);
   }
 
-  process.stdout.write('\r\n');
+  stream.write('\r\n');
 }
 
 program
