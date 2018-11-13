@@ -115,11 +115,11 @@ program
       });
 
       encryption.on('end', () => {
+        const diff = process.hrtime(start);
+
         if (spinner) {
           spinner.stop();
         }
-
-        const diff = process.hrtime(start);
 
         if (verbose) {
           process.stdout.write('\r\n');
@@ -206,11 +206,11 @@ program
       });
 
       decryption.on('end', () => {
+        const diff = process.hrtime(start);
+
         if (spinner) {
           spinner.stop();
         }
-
-        const diff = process.hrtime(start);
 
         if (verbose) {
           process.stdout.write('\r\n');
