@@ -10,7 +10,7 @@ const MAX_ROUNDS = 9000;
 
 /**
  * @param {any[]} arr 
- * @param {(...any?) => any} action 
+ * @param {(...any?) => void} action 
  * @returns {IterableIterator<Promise<string>>} 
  */
 function* arrayLoop(arr, action) {
@@ -20,9 +20,12 @@ function* arrayLoop(arr, action) {
 }
 
 /**
+ * Hash a key to make it valid for WarShield's encryption algorithm 
+ * 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  * @param {number} rounds 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} salt 
+ * @returns {Promise<[Buffer, string | Buffer | NodeJS.TypedArray | DataView]>}
  */
 function generateKey(key, rounds, salt = null) {
   return new Promise((resolve, reject) => {
@@ -37,7 +40,10 @@ function generateKey(key, rounds, salt = null) {
 }
 
 /**
+ * Generate a ciphering stream (`crypto.CipherGCM`) and returns a random IV + the ciphering stream
+ * 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @returns {{ iv: Buffer, stream: import('crypto').CipherGCM }}
  */
 function encryptStream(key) {
   const iv = crypto.randomBytes(16);
@@ -50,16 +56,22 @@ function encryptStream(key) {
 }
 
 /**
+ * Generate a deciphering stream (`crypto.DecipherGCM`) and returns the stream
+ * 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} iv 
+ * @returns {import('crypto').DecipherGCM}
  */
 function decryptStream(key, iv) {
   return crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
 }
 
 /**
+ * Encrypt a file
+ * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @returns {Promise<string>}
  */
 function encryptFile(file, key) {
   return new Promise(async (resolve, reject) => {
@@ -117,8 +129,11 @@ function encryptFile(file, key) {
 }
 
 /**
+ * Decrypt a file
+ * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @returns {Promise<string>}
  */
 function decryptFile(file, key) {
   return new Promise((resolve, reject) => {
@@ -193,6 +208,13 @@ function decryptFile(file, key) {
   });
 }
 
+/**
+ * Recursively encrypt files from a given directory (can be a file)
+ * 
+ * @param {string} file 
+ * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @returns {EventEmitter} 
+ */
 function encryptRecursive(file, key) {
   const em = new EventEmitter();
 
@@ -259,6 +281,13 @@ function encryptRecursive(file, key) {
   return em;
 }
 
+/**
+ * Recursively decrypt files from a given directory (can be a file)
+ * 
+ * @param {string} file 
+ * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @returns {EventEmitter} 
+ */
 function decryptRecursive(file, key) {
   const em = new EventEmitter();
 
@@ -327,6 +356,7 @@ function decryptRecursive(file, key) {
 
 /**
  * @param {string} directory 
+ * @returns {EventEmitter}
  */
 function getFiles(directory) {
   const em = new EventEmitter();
