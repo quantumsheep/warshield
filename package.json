@@ -33,6 +33,7 @@
     "@types/node": "^10.11.7"
   },
   "dependencies": {
-    "commander": "^2.19.0"
+    "commander": "^2.19.0",
+    "mkdirp": "^0.5.1"
   }
 }

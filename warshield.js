@@ -71,13 +71,14 @@ function decryptStream(key, iv) {
  * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {string} tmp 
  * @returns {Promise<string>}
  */
-function encryptFile(file, key) {
+function encryptFile(file, key, tmp) {
   return new Promise(async (resolve, reject) => {
     // Generate warshield file id
     const id = crypto.randomBytes(8).toString('hex');
-    const targetpath = `${file}.${id}.warshield`;
+    const targetpath = path.join(tmp, `${id}.warshield`);
 
     // Error function
     const ERROR = (err = "") => {
@@ -133,13 +134,14 @@ function encryptFile(file, key) {
  * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {string} tmp 
  * @returns {Promise<string>}
  */
-function decryptFile(file, key) {
+function decryptFile(file, key, tmp) {
   return new Promise((resolve, reject) => {
     // Generate warshield file id
     const id = crypto.randomBytes(8).toString('hex');
-    const targetpath = `${file}.${id}.warshield`;
+    const targetpath = path.join(tmp, `${id}.warshield`);
 
     // Error function
     const ERROR = (err = "") => {
@@ -213,9 +215,10 @@ function decryptFile(file, key) {
  * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {string} tmp 
  * @returns {EventEmitter} 
  */
-function encryptRecursive(file, key) {
+function encryptRecursive(file, key, tmp) {
   const em = new EventEmitter();
 
   fs.stat(file, (err, stat) => {
@@ -236,7 +239,7 @@ function encryptRecursive(file, key) {
         .on('failed', file => em.emit('crawl-failed', file))
         .on('end', () => {
           const loop = arrayLoop(files, file => {
-            return encryptFile(file, key)
+            return encryptFile(file, key, tmp)
               .then(err => {
                 em.emit('done', file);
 
@@ -271,7 +274,7 @@ function encryptRecursive(file, key) {
           }
         });
     } else {
-      encryptFile(file, key)
+      encryptFile(file, key, tmp)
         .then(() => em.emit('done', file))
         .catch(() => em.emit('failed', file))
         .finally(() => em.emit('end'));
@@ -286,9 +289,10 @@ function encryptRecursive(file, key) {
  * 
  * @param {string} file 
  * @param {string | Buffer | NodeJS.TypedArray | DataView} key 
+ * @param {string} tmp 
  * @returns {EventEmitter} 
  */
-function decryptRecursive(file, key) {
+function decryptRecursive(file, key, tmp) {
   const em = new EventEmitter();
 
   fs.stat(file, (err, stat) => {
@@ -311,7 +315,7 @@ function decryptRecursive(file, key) {
           let done = 0;
 
           const loop = arrayLoop(files, file => {
-            return decryptFile(file, key)
+            return decryptFile(file, key, tmp)
               .then(err => {
                 em.emit('done', file);
 
@@ -344,7 +348,7 @@ function decryptRecursive(file, key) {
           }
         });
     } else {
-      decryptFile(file, key)
+      decryptFile(file, key, tmp)
         .then(() => em.emit('done', file))
         .catch(() => em.emit('failed', file))
         .finally(() => em.emit('end'));

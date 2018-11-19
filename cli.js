@@ -4,6 +4,9 @@ const program = require('commander');
 const warshield = require('./warshield');
 const Reader = require('./src/Reader');
 const Spinner = require('./src/Spinner');
+const os = require('os');
+const path = require('path');
+const mkdirp = require('mkdirp');
 
 async function ask_password(confirmation = true) {
   const reader = new Reader();
@@ -58,7 +61,7 @@ program
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
   .description('encrypt a file or all files in a directory')
-  .action(async (file, { parent: { verbose, trace } }) => {
+  .action(async (file, { parent: { verbose, trace, tmp } }) => {
     try {
       const key = await ask_password(true);
 
@@ -72,71 +75,93 @@ program
 
       const start = process.hrtime();
 
-      const encryption = warshield.encryptRecursive(file, key);
+      if (!tmp) {
+        tmp = path.join(os.tmpdir(), 'warshield');
+      }
 
-      encryption.on('crawl-found', filename => {
-        if (verbose) {
-          display_verbose("Added file", filename);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
+      process.stdout.write(`Creating temporary directory "${tmp}"...`);
 
-      encryption.on('crawl-failed', (filename, err) => {
-        failed++;
+      mkdirp(tmp, (err, made) => {
+        if (err) {
+          console.log(`Can't create temporary directory "${tmp}".`);
+          console.log(err.message);
 
-        if (verbose) {
-          display_verbose("Failed adding", filename, trace, err);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      encryption.on('failed-delete', (filename, err) => {
-        if (verbose) {
-          display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
-        }
-      });
-
-      encryption.on('done', filename => {
-        done++;
-
-        if (verbose) {
-          display_verbose("\x1b[32mDone encrypting", filename);
-        } else {
-          spinner.query = `Encrypting files... ${filename}`;
-        }
-      });
-
-      encryption.on('failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
-        } else {
-          spinner.query = `Encrypting files... ${filename}`;
-        }
-      });
-
-      encryption.on('end', () => {
-        const diff = process.hrtime(start);
-
-        if (spinner) {
-          spinner.stop();
+          return process.exit();
         }
 
-        if (verbose) {
-          process.stdout.write('\r\n');
-        } else {
+        if (!verbose && !made) {
           process.stdout.write('\u001b[1G\u001b[2K');
+        } else {
+          process.stdout.write(' Done!\n');
+          process.stdout.write('Starting encrypting files...\n');
         }
 
-        console.log(`Finished decrypting files!`);
-        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-        console.log(`Total decrypted files: ${done}`);
-        console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+        const encryption = warshield.encryptRecursive(file, key, tmp);
 
-        process.exit();
+        encryption.on('crawl-found', filename => {
+          if (verbose) {
+            display_verbose("Added file", filename);
+          } else {
+            spinner.query = `Crawling files... ${filename}`;
+          }
+        });
+
+        encryption.on('crawl-failed', (filename, err) => {
+          failed++;
+
+          if (verbose) {
+            display_verbose("Failed adding", filename, trace, err);
+          } else {
+            spinner.query = `Crawling files... ${filename}`;
+          }
+        });
+
+        encryption.on('failed-delete', (filename, err) => {
+          if (verbose) {
+            display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
+          }
+        });
+
+        encryption.on('done', filename => {
+          done++;
+
+          if (verbose) {
+            display_verbose("\x1b[32mDone encrypting", filename);
+          } else {
+            spinner.query = `Encrypting files... ${filename}`;
+          }
+        });
+
+        encryption.on('failed', (filename, err) => {
+          failed++;
+
+          if (verbose) {
+            display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
+          } else {
+            spinner.query = `Encrypting files... ${filename}`;
+          }
+        });
+
+        encryption.on('end', () => {
+          const diff = process.hrtime(start);
+
+          if (spinner) {
+            spinner.stop();
+          }
+
+          if (verbose) {
+            process.stdout.write('\r\n');
+          } else {
+            process.stdout.write('\u001b[1G\u001b[2K');
+          }
+
+          console.log(`Finished decrypting files!`);
+          console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+          console.log(`Total decrypted files: ${done}`);
+          console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+
+          process.exit();
+        });
       });
     } catch (e) {
       console.error(e.message);
@@ -149,7 +174,7 @@ program
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
   .description('decrypt a file or all files in a directory')
-  .action(async (file, { parent: { verbose, trace } }) => {
+  .action(async (file, { parent: { verbose, trace, tmp } }) => {
     try {
       const key = await ask_password(false);
 
@@ -163,71 +188,93 @@ program
 
       const start = process.hrtime();
 
-      const decryption = warshield.decryptRecursive(file, key);
+      if (!tmp) {
+        tmp = path.join(os.tmpdir(), 'warshield');
+      }
 
-      decryption.on('crawl-found', filename => {
-        if (verbose) {
-          display_verbose("Failed adding", filename);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
+      process.stdout.write(`Creating temporary directory "${tmp}"...`);
 
-      decryption.on('crawl-failed', (filename, err) => {
-        failed++;
+      mkdirp(tmp, (err, made) => {
+        if (err) {
+          console.log(`Can't create temporary directory "${tmp}".`);
+          console.log(err.message);
 
-        if (verbose) {
-          display_verbose("Failed adding", filename, trace, err);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      decryption.on('failed-delete', (filename, err) => {
-        if (verbose) {
-          display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
-        }
-      });
-
-      decryption.on('done', filename => {
-        done++;
-
-        if (verbose) {
-          display_verbose("\x1b[32mDone decrypting", filename);
-        } else {
-          spinner.query = `Decrypting files... ${filename}`;
-        }
-      });
-
-      decryption.on('failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
-        } else {
-          spinner.query = `Decrypting files... ${filename}`;
-        }
-      });
-
-      decryption.on('end', () => {
-        const diff = process.hrtime(start);
-
-        if (spinner) {
-          spinner.stop();
+          return process.exit();
         }
 
-        if (verbose) {
-          process.stdout.write('\r\n');
-        } else {
+        if (!verbose && !made) {
           process.stdout.write('\u001b[1G\u001b[2K');
+        } else {
+          process.stdout.write(' Done!\n');
+          process.stdout.write('Starting encrypting files...\n');
         }
 
-        console.log(`Finished decrypting files!`);
-        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-        console.log(`Total decrypted files: ${done}`);
-        console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+        const decryption = warshield.decryptRecursive(file, key, tmp);
 
-        process.exit();
+        decryption.on('crawl-found', filename => {
+          if (verbose) {
+            display_verbose("Failed adding", filename);
+          } else {
+            spinner.query = `Crawling files... ${filename}`;
+          }
+        });
+
+        decryption.on('crawl-failed', (filename, err) => {
+          failed++;
+
+          if (verbose) {
+            display_verbose("Failed adding", filename, trace, err);
+          } else {
+            spinner.query = `Crawling files... ${filename}`;
+          }
+        });
+
+        decryption.on('failed-delete', (filename, err) => {
+          if (verbose) {
+            display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
+          }
+        });
+
+        decryption.on('done', filename => {
+          done++;
+
+          if (verbose) {
+            display_verbose("\x1b[32mDone decrypting", filename);
+          } else {
+            spinner.query = `Decrypting files... ${filename}`;
+          }
+        });
+
+        decryption.on('failed', (filename, err) => {
+          failed++;
+
+          if (verbose) {
+            display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
+          } else {
+            spinner.query = `Decrypting files... ${filename}`;
+          }
+        });
+
+        decryption.on('end', () => {
+          const diff = process.hrtime(start);
+
+          if (spinner) {
+            spinner.stop();
+          }
+
+          if (verbose) {
+            process.stdout.write('\r\n');
+          } else {
+            process.stdout.write('\u001b[1G\u001b[2K');
+          }
+
+          console.log(`Finished decrypting files!`);
+          console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+          console.log(`Total decrypted files: ${done}`);
+          console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+
+          process.exit();
+        });
       });
     } catch (e) {
       console.error(e.message);
