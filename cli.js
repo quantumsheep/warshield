@@ -54,12 +54,14 @@ program
   .version('2.2.0', '-V, --version')
   .usage('[options] <mode> <dir>')
   .option('-v, --verbose', 'enable verbosity')
-  .option('-t, --trace', 'enable stacktrace');
+  .option('-t, --trace', 'enable stacktrace')
+  .option('-p, --tmp <directory>', 'change temporary directory');
 
 program
   .command('encrypt <file>')
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
+  .option('-p, --tmp <directory>', 'change temporary directory')
   .description('encrypt a file or all files in a directory')
   .action(async (file, { parent: { verbose, trace, tmp } }) => {
     try {
@@ -79,12 +81,11 @@ program
         tmp = path.join(os.tmpdir(), 'warshield');
       }
 
-      process.stdout.write(`Creating temporary directory "${tmp}"...`);
+      process.stdout.write(`Creating temporary directory "${tmp}" if it doesn't already exists...`);
 
       mkdirp(tmp, (err, made) => {
         if (err) {
-          console.log(`Can't create temporary directory "${tmp}".`);
-          console.log(err.message);
+          console.log(`Can't create temporary directory "${tmp}": ${err.message}.`);
 
           return process.exit();
         }
@@ -173,6 +174,7 @@ program
   .command('decrypt <file>')
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
+  .option('-p, --tmp <directory>', 'change temporary directory')
   .description('decrypt a file or all files in a directory')
   .action(async (file, { parent: { verbose, trace, tmp } }) => {
     try {
@@ -196,8 +198,7 @@ program
 
       mkdirp(tmp, (err, made) => {
         if (err) {
-          console.log(`Can't create temporary directory "${tmp}".`);
-          console.log(err.message);
+          console.log(`Can't create temporary directory "${tmp}": ${err.message}.`);
 
           return process.exit();
         }
