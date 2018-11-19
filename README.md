@@ -19,10 +19,11 @@ Usage: warshield [options] <mode> <dir>
 Options:
   -V, --version             output the version number
   -v, --verbose             enable verbosity
-  -v, --verbose             enable stacktrace
+  -t, --trace               enable stacktrace
+  -p, --tmp <directory>     change temporary directory
   -h, --help                output usage information
 
 Commands:
-  encrypt <file> [options]  encrypt a file or all files in a directory
-  decrypt <file> [options]  decrypt a file or all files in a directory
+  encrypt [options] <file>  encrypt a file or all files in a directory
+  decrypt [options] <file>  decrypt a file or all files in a directory
 ```
