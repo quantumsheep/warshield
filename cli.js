@@ -79,8 +79,6 @@ program
         spinner.start();
       }
 
-      const start = process.hrtime();
-
       if (!tmp) {
         tmp = path.join(os.tmpdir(), 'warshield');
       }
@@ -100,6 +98,8 @@ program
           process.stdout.write(' Done!\n');
           process.stdout.write('Starting encrypting files...\n');
         }
+
+        const start = process.hrtime();
 
         const encryption = warshield.encryptRecursive(file, key, tmp);
 
@@ -192,8 +192,6 @@ program
         spinner.start();
       }
 
-      const start = process.hrtime();
-
       if (!tmp) {
         tmp = path.join(os.tmpdir(), 'warshield');
       }
@@ -213,6 +211,8 @@ program
           process.stdout.write(' Done!\n');
           process.stdout.write('Starting decrypting files...\n');
         }
+
+        const start = process.hrtime();
 
         const decryption = warshield.decryptRecursive(file, key, tmp);
 
