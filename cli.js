@@ -156,10 +156,10 @@ program
             process.stdout.write('\u001b[1G\u001b[2K');
           }
 
-          console.log(`Finished decrypting files!`);
+          console.log(`Finished encrypting files!`);
           console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-          console.log(`Total decrypted files: ${done}`);
-          console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+          console.log(`Total encrypted files: ${done}`);
+          console.log(`Failed: ${failed} (read-only or access denied files)`);
 
           process.exit();
         });
@@ -184,7 +184,7 @@ program
       let failed = 0;
 
       if (!verbose) {
-        var spinner = new Spinner("Starting encryption...");
+        var spinner = new Spinner("Starting decryption...");
         spinner.start();
       }
 
@@ -207,7 +207,7 @@ program
           process.stdout.write('\u001b[1G\u001b[2K');
         } else {
           process.stdout.write(' Done!\n');
-          process.stdout.write('Starting encrypting files...\n');
+          process.stdout.write('Starting decrypting files...\n');
         }
 
         const decryption = warshield.decryptRecursive(file, key, tmp);
@@ -272,7 +272,7 @@ program
           console.log(`Finished decrypting files!`);
           console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
           console.log(`Total decrypted files: ${done}`);
-          console.log(`Failed: ${failed} (access denied or non-encrypted files)`);
+          console.log(`Failed: ${failed} (read-only, access denied or non-encrypted files)`);
 
           process.exit();
         });
