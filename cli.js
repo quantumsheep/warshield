@@ -8,6 +8,10 @@ const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
 
+function clearline() {
+  process.stdout.write('\u001b[1G\u001b[2K');
+}
+
 async function ask_password(confirmation = true) {
   const reader = new Reader();
 
@@ -16,7 +20,7 @@ async function ask_password(confirmation = true) {
   if (confirmation) {
     const key2 = await reader.read('Confirm password: ', true);
 
-    process.stdout.write('\u001b[1G\u001b[2K');
+    clearline();
 
     if (key === key2) {
       return key;
@@ -24,7 +28,7 @@ async function ask_password(confirmation = true) {
       throw new Error("Confirmation password doesn't match.");
     }
   } else {
-    process.stdout.write('\u001b[1G\u001b[2K');
+    clearline();
 
     return key;
   }
@@ -91,7 +95,7 @@ program
         }
 
         if (!verbose && !made) {
-          process.stdout.write('\u001b[1G\u001b[2K');
+          clearline();
         } else {
           process.stdout.write(' Done!\n');
           process.stdout.write('Starting encrypting files...\n');
@@ -153,7 +157,7 @@ program
           if (verbose) {
             process.stdout.write('\r\n');
           } else {
-            process.stdout.write('\u001b[1G\u001b[2K');
+            clearline();
           }
 
           console.log(`Finished encrypting files!`);
@@ -204,7 +208,7 @@ program
         }
 
         if (!verbose && !made) {
-          process.stdout.write('\u001b[1G\u001b[2K');
+          clearline();
         } else {
           process.stdout.write(' Done!\n');
           process.stdout.write('Starting decrypting files...\n');
@@ -266,7 +270,7 @@ program
           if (verbose) {
             process.stdout.write('\r\n');
           } else {
-            process.stdout.write('\u001b[1G\u001b[2K');
+            clearline();
           }
 
           console.log(`Finished decrypting files!`);
