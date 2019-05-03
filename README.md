@@ -10,7 +10,8 @@ Key is hash in a 256 bits key with SHA-512 using random 64 bytes salt and rounds
 
 
 # How to install
-`npm install -g warshield`
+NodeJS minimal required version is `v10.0.0`.  
+To install as a CLI tool, launch `npm install -g warshield`.
 
 # How to use
 ```
