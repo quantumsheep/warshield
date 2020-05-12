@@ -5,7 +5,7 @@ const showUI = require('./src/UserInterface');
 const { encrypt, decrypt } = require('./src/index');
 
 program
-  .version('2.2.0', '-V, --version')
+  .version('3.0.1', '-V, --version')
   .usage('[options] <mode> <dir>')
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
