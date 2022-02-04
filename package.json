@@ -30,12 +30,12 @@
   "author": "Nathanael Demacon <nathanael.dmc@outlook.fr>",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^10.17.21"
+    "@types/node": "^16.11.22"
   },
   "dependencies": {
-    "cfonts": "^2.8.2",
-    "commander": "^2.20.3",
-    "inquirer": "^6.5.2",
-    "mkdirp": "^0.5.5"
+    "cfonts": "^2.10.0",
+    "commander": "^9.0.0",
+    "inquirer": "^8.2.0",
+    "mkdirp": "^1.0.4"
   }
 }
