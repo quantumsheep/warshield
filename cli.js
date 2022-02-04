@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 
-const program = require('commander');
+const { program } = require('commander');
 const showUI = require('./src/UserInterface');
 const { encrypt, decrypt } = require('./src/index');
 
 program
   .version('3.0.1', '-V, --version')
-  .usage('[options] <mode> <dir>')
-  .option('-v, --verbose', 'enable verbosity')
-  .option('-t, --trace', 'enable stacktrace')
-  .option('-p, --tmp <directory>', 'change temporary directory');
+  .usage('[options] <mode> <dir>');
 
 program
   .command('encrypt <file>')
@@ -17,9 +14,7 @@ program
   .option('-t, --trace', 'enable stacktrace')
   .option('-p, --tmp <directory>', 'change temporary directory')
   .description('encrypt a file or all files in a directory')
-  .action(async (file, options) => {
-    await encrypt(file, options);
-  });
+  .action(encrypt);
 
 program
   .command('decrypt <file>')
@@ -27,14 +22,12 @@ program
   .option('-t, --trace', 'enable stacktrace')
   .option('-p, --tmp <directory>', 'change temporary directory')
   .description('decrypt a file or all files in a directory')
-  .action(async (file, options) => {
-    await decrypt(file, options);
-  });
+  .action(decrypt);
 
 program.action(() => program.help());
 
-program.parse(process.argv);
-
 if (process.argv.length < 3) {
-  (async () => { await showUI() })();
+  showUI();
+} else {
+  program.parse();
 }

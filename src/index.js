@@ -51,7 +51,7 @@ function display_verbose(message, filename, trace = false, error = "") {
   stream.write('\r\n');
 }
 
-async function encrypt(file, { parent: { verbose, trace, tmp } }) {
+async function encrypt(file, { verbose, trace, tmp }) {
   try {
     const key = await ask_password(true);
 
@@ -69,88 +69,82 @@ async function encrypt(file, { parent: { verbose, trace, tmp } }) {
 
     process.stdout.write(`Creating temporary directory "${tmp}" if it doesn't already exists...`);
 
-    mkdirp(tmp, (err, made) => {
-      if (err) {
-        console.log(`Can't create temporary directory "${tmp}": ${err.message}.`);
+    const made = await mkdirp(tmp);
 
-        return process.exit();
-      }
+    if (!verbose && !made) {
+      clearline();
+    } else {
+      process.stdout.write(' Done!\n');
+      process.stdout.write('Starting encrypting files...\n');
+    }
 
-      if (!verbose && !made) {
-        clearline();
+    const start = process.hrtime();
+
+    const encryption = warshield.encryptRecursive(file, key, tmp);
+
+    encryption.on('crawl-found', filename => {
+      if (verbose) {
+        display_verbose("Added file", filename);
       } else {
-        process.stdout.write(' Done!\n');
-        process.stdout.write('Starting encrypting files...\n');
+        spinner.query = `Crawling files... ${filename}`;
+      }
+    });
+
+    encryption.on('crawl-failed', (filename, err) => {
+      failed++;
+
+      if (verbose) {
+        display_verbose("Failed adding", filename, trace, err);
+      } else {
+        spinner.query = `Crawling files... ${filename}`;
+      }
+    });
+
+    encryption.on('failed-delete', (filename, err) => {
+      if (verbose) {
+        display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
+      }
+    });
+
+    encryption.on('done', filename => {
+      done++;
+
+      if (verbose) {
+        display_verbose("\x1b[32mDone encrypting", filename);
+      } else {
+        spinner.query = `Encrypting files... ${filename}`;
+      }
+    });
+
+    encryption.on('failed', (filename, err) => {
+      failed++;
+
+      if (verbose) {
+        display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
+      } else {
+        spinner.query = `Encrypting files... ${filename}`;
+      }
+    });
+
+    encryption.on('end', () => {
+      const diff = process.hrtime(start);
+
+      if (spinner) {
+        spinner.stop();
       }
 
-      const start = process.hrtime();
+      if (verbose) {
+        process.stdout.write('\r\n');
+      } else {
+        clearline();
+      }
 
-      const encryption = warshield.encryptRecursive(file, key, tmp);
+      console.log(`Finished encrypting files!`);
+      console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+      console.log(`Total encrypted files: ${done}`);
+      console.log(`Failed: ${failed} (read-only or access denied files)`);
 
-      encryption.on('crawl-found', filename => {
-        if (verbose) {
-          display_verbose("Added file", filename);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      encryption.on('crawl-failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("Failed adding", filename, trace, err);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      encryption.on('failed-delete', (filename, err) => {
-        if (verbose) {
-          display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
-        }
-      });
-
-      encryption.on('done', filename => {
-        done++;
-
-        if (verbose) {
-          display_verbose("\x1b[32mDone encrypting", filename);
-        } else {
-          spinner.query = `Encrypting files... ${filename}`;
-        }
-      });
-
-      encryption.on('failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
-        } else {
-          spinner.query = `Encrypting files... ${filename}`;
-        }
-      });
-
-      encryption.on('end', () => {
-        const diff = process.hrtime(start);
-
-        if (spinner) {
-          spinner.stop();
-        }
-
-        if (verbose) {
-          process.stdout.write('\r\n');
-        } else {
-          clearline();
-        }
-
-        console.log(`Finished encrypting files!`);
-        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-        console.log(`Total encrypted files: ${done}`);
-        console.log(`Failed: ${failed} (read-only or access denied files)`);
-
-        process.exit();
-      });
+      process.exit();
     });
   } catch (e) {
     console.error(e.message);
@@ -158,7 +152,7 @@ async function encrypt(file, { parent: { verbose, trace, tmp } }) {
   }
 }
 
-async function decrypt(file, { parent: { verbose, trace, tmp } }) {
+async function decrypt(file, { verbose, trace, tmp }) {
   try {
     const key = await ask_password(false);
 
@@ -176,88 +170,83 @@ async function decrypt(file, { parent: { verbose, trace, tmp } }) {
 
     process.stdout.write(`Creating temporary directory "${tmp}"...`);
 
-    mkdirp(tmp, (err, made) => {
-      if (err) {
-        console.log(`Can't create temporary directory "${tmp}": ${err.message}.`);
+    const made = await mkdirp(tmp);
 
-        return process.exit();
-      }
 
-      if (!verbose && !made) {
-        clearline();
+    if (!verbose && !made) {
+      clearline();
+    } else {
+      process.stdout.write(' Done!\n');
+      process.stdout.write('Starting decrypting files...\n');
+    }
+
+    const start = process.hrtime();
+
+    const decryption = warshield.decryptRecursive(file, key, tmp);
+
+    decryption.on('crawl-found', filename => {
+      if (verbose) {
+        display_verbose("Failed adding", filename);
       } else {
-        process.stdout.write(' Done!\n');
-        process.stdout.write('Starting decrypting files...\n');
+        spinner.query = `Crawling files... ${filename}`;
+      }
+    });
+
+    decryption.on('crawl-failed', (filename, err) => {
+      failed++;
+
+      if (verbose) {
+        display_verbose("Failed adding", filename, trace, err);
+      } else {
+        spinner.query = `Crawling files... ${filename}`;
+      }
+    });
+
+    decryption.on('failed-delete', (filename, err) => {
+      if (verbose) {
+        display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
+      }
+    });
+
+    decryption.on('done', filename => {
+      done++;
+
+      if (verbose) {
+        display_verbose("\x1b[32mDone decrypting", filename);
+      } else {
+        spinner.query = `Decrypting files... ${filename}`;
+      }
+    });
+
+    decryption.on('failed', (filename, err) => {
+      failed++;
+
+      if (verbose) {
+        display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
+      } else {
+        spinner.query = `Decrypting files... ${filename}`;
+      }
+    });
+
+    decryption.on('end', () => {
+      const diff = process.hrtime(start);
+
+      if (spinner) {
+        spinner.stop();
       }
 
-      const start = process.hrtime();
+      if (verbose) {
+        process.stdout.write('\r\n');
+      } else {
+        clearline();
+      }
 
-      const decryption = warshield.decryptRecursive(file, key, tmp);
+      console.log(`Finished decrypting files!`);
+      console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+      console.log(`Total decrypted files: ${done}`);
+      console.log(`Failed: ${failed} (read-only, access denied or non-encrypted files)`);
 
-      decryption.on('crawl-found', filename => {
-        if (verbose) {
-          display_verbose("Failed adding", filename);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      decryption.on('crawl-failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("Failed adding", filename, trace, err);
-        } else {
-          spinner.query = `Crawling files... ${filename}`;
-        }
-      });
-
-      decryption.on('failed-delete', (filename, err) => {
-        if (verbose) {
-          display_verbose("\x1b[31mFailed deleting .warshield file", filename, trace, err);
-        }
-      });
-
-      decryption.on('done', filename => {
-        done++;
-
-        if (verbose) {
-          display_verbose("\x1b[32mDone decrypting", filename);
-        } else {
-          spinner.query = `Decrypting files... ${filename}`;
-        }
-      });
-
-      decryption.on('failed', (filename, err) => {
-        failed++;
-
-        if (verbose) {
-          display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
-        } else {
-          spinner.query = `Decrypting files... ${filename}`;
-        }
-      });
-
-      decryption.on('end', () => {
-        const diff = process.hrtime(start);
-
-        if (spinner) {
-          spinner.stop();
-        }
-
-        if (verbose) {
-          process.stdout.write('\r\n');
-        } else {
-          clearline();
-        }
-
-        console.log(`Finished decrypting files!`);
-        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-        console.log(`Total decrypted files: ${done}`);
-        console.log(`Failed: ${failed} (read-only, access denied or non-encrypted files)`);
-
-        process.exit();
-      });
+      process.exit();
     });
   } catch (e) {
     console.error(e.message);

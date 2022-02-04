@@ -297,7 +297,7 @@ function decryptRecursive(file, key, tmp) {
 
   fs.stat(file, (err, stat) => {
     if (err) {
-      em.emit('crawl-failed', file, err.message);
+      em.emit('crawl-failed', file, err);
       em.emit('end');
       return;
     }
@@ -310,7 +310,7 @@ function decryptRecursive(file, key, tmp) {
           files.push(file);
           em.emit('crawl-found', file);
         })
-        .on('failed', file => em.emit('crawl-failed', file))
+        .on('failed', (file, err) => em.emit('crawl-failed', file, err))
         .on('end', () => {
           let done = 0;
 
@@ -350,7 +350,7 @@ function decryptRecursive(file, key, tmp) {
     } else {
       decryptFile(file, key, tmp)
         .then(() => em.emit('done', file))
-        .catch(() => em.emit('failed', file))
+        .catch((err) => em.emit('failed', file, err))
         .finally(() => em.emit('end'));
     }
   });
@@ -367,7 +367,7 @@ function getFiles(directory) {
 
   fs.readdir(directory, (err, files) => {
     if (err) {
-      em.emit('failed', directory);
+      em.emit('failed', directory, err);
       return em.emit('end');
     }
 
@@ -388,13 +388,13 @@ function getFiles(directory) {
 
       fs.stat(filepath, (err, stat) => {
         if (err) {
-          em.emit('failed', filepath);
+          em.emit('failed', filepath, err);
           return end();
         }
 
         if (stat.isDirectory()) {
           getFiles(filepath, false)
-            .on('failed', file => em.emit('failed', file))
+            .on('failed', (file, err) => em.emit('failed', file, err))
             .on('found', file => em.emit('found', file))
             .on('end', () => {
 
