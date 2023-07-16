@@ -23,17 +23,18 @@ function hideName(name){
   return crypto.createHash('sha256').update(name).digest('hex'); 
 }
 
-function hideFilesName(directory, file){
+function hideFilesName(directory, file, infoObj={}){
   var filedir = path.join(directory, file); 
   var shaname = hideName(file);
   var shadir = path.join(directory, shaname) 
   fs.renameSync(filedir, shadir); 
   var stat = fs.statSync(shadir); 
+  infoObj[shaname]=file; 
 
   if(stat.isDirectory()){
     var files=fs.readdirSync(shadir); 
     for(var i in files){
-      hideFilesName(shadir, files[i]);
+      hideFilesName(shadir, files[i], infoObj);
     }
   }
 } 
