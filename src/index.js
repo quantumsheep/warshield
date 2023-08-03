@@ -4,7 +4,6 @@ const Spinner = require('./Spinner');
 const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
-const fs= require('fs');
 
 function clearline() {
   process.stdout.write('\u001b[1G\u001b[2K');
@@ -80,17 +79,10 @@ async function encrypt(file, { verbose, trace, tmp }) {
     }
 
     const start = process.hrtime();
-    var encryption = warshield.encryptRecursive(file, key, tmp);
-
-    //Hide filenames
-    var infoObj = {}; //saved folders data
+    warshield.hideFilesName(path.join(__dirname, ".."),file); 
     sha = warshield.hideName(file); 
-    warshield.hideFilesName(path.join(__dirname, ".."),file, infoObj);//encrypt names and store hashes in dictonary
-    var metadatadir = path.join(__dirname, "..", sha, "metadata.json"); 
-    fs.writeFileSync(metadatadir, JSON.stringify(infoObj, null, 2)); //write names on jsonfile
-    encryption= warshield.encryptRecursive(metadatadir, key, tmp);//crypt metadatafile
+    const encryption = warshield.encryptRecursive(sha, key, tmp);
 
-    
     encryption.on('crawl-found', filename => {
       if (verbose) {
         display_verbose("Added file", filename);
