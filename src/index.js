@@ -79,9 +79,8 @@ async function encrypt(file, { verbose, trace, tmp }) {
     }
 
     const start = process.hrtime();
-    warshield.hideFilesName(path.join(__dirname, ".."),file); 
-    sha = warshield.hideName(file); 
-    const encryption = warshield.encryptRecursive(sha, key, tmp);
+
+    const encryption = warshield.encryptRecursive(file, key, tmp);
 
     encryption.on('crawl-found', filename => {
       if (verbose) {

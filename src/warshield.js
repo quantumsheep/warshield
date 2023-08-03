@@ -19,26 +19,6 @@ function* arrayLoop(arr, action) {
   }
 }
 
-function hideName(name){
-  return crypto.createHash('sha256').update(name).digest('hex'); 
-}
-
-function hideFilesName(directory, file){
-  var filedir = path.join(directory, file); 
-  var shaname = hideName(file);
-  var shadir = path.join(directory, shaname) 
-  fs.renameSync(filedir, shadir); 
-  var stat = fs.statSync(shadir); 
-
-  if(stat.isDirectory()){
-    var files=fs.readdirSync(shadir); 
-    for(var i in files){
-      hideFilesName(shadir, files[i]);
-    }
-  }
-} 
-
-
 /**
  * Hash a key to make it valid for WarShield's encryption algorithm 
  * 
@@ -112,7 +92,7 @@ function encryptFile(file, key, tmp) {
     // Create cipher stream
     const cipher = encryptStream(derivedKey);
     cipher.stream.on('error', ERROR);
-    console.log(file);
+
     const source_rs = fs.createReadStream(file).on('error', ERROR);
     const target_ws = fs.createWriteStream(targetpath).on('error', ERROR);
 
@@ -384,7 +364,7 @@ function decryptRecursive(file, key, tmp) {
  */
 function getFiles(directory) {
   const em = new EventEmitter();
-  console.log(directory); 
+
   fs.readdir(directory, (err, files) => {
     if (err) {
       em.emit('failed', directory, err);
@@ -421,7 +401,6 @@ function getFiles(directory) {
               end();
             });
         } else {
-          console.log(filepath); 
           em.emit('found', filepath);
           end();
         }
@@ -440,6 +419,4 @@ module.exports = {
   decryptFile,
   encryptRecursive,
   decryptRecursive,
-  hideFilesName, 
-  hideName
 }
