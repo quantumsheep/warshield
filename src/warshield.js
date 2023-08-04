@@ -7,6 +7,7 @@ const path = require('path');
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const MIN_ROUNDS = 3000;
 const MAX_ROUNDS = 9000;
+const METADATA_FILE = 'metadata.json'
 
 /**
  * @param {any[]} arr 
@@ -411,6 +412,54 @@ function getFiles(directory) {
   return em;
 }
 
+/**
+ * Computes the sha256 of a name using a random salt each time. 
+ * @param {string} name 
+ * @returns {string}
+ */
+function shaFileName(name){
+  var salt = crypto.randomBytes(64); 
+  return crypto.createHash('sha256').update(name+salt).digest('hex');
+}
+
+function hideNames(filePath, obj={}){
+  var file = path.basename(filePath);
+  var dir = path.dirname(filePath); 
+  var shaName = shaFileName(file); 
+  var newPath = path.join(dir, shaName)
+  obj[shaName] = file;
+  obj[file] = shaName;
+  fs.renameSync(filePath, newPath); 
+  var stat = fs.statSync(newPath); 
+  if(stat.isDirectory()){
+    var files = fs.readdirSync(newPath); 
+    for(var x of files){
+      var newfilePath= path.join(newPath, x); 
+      hideNames(newfilePath, obj); 
+    }
+  }
+}
+
+/**Sync function to encrypt names. It works just for directories. For a single file it will not work for consistency problems. 
+ * @parm {string} filePath
+*/
+function encryptNames(filePath){
+  var metadata_filenames={};
+
+  hideNames(filePath, metadata_filenames); 
+  var newPath = metadata_filenames[filePath]; 
+  if(fs.statSync(newPath).isDirectory()){
+    var metadataPath = path.join(newPath, METADATA_FILE);
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata_filenames, null, 2));
+  }else{
+    var metadataPath = METADATA_FILE; 
+    fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata_filenames, null, 2));
+  }
+
+  return metadataPath; 
+}
+
+
 module.exports = {
   generateKey,
   encryptStream,
@@ -419,4 +468,5 @@ module.exports = {
   decryptFile,
   encryptRecursive,
   decryptRecursive,
+  encryptNames
 }

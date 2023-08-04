@@ -4,6 +4,7 @@ const Spinner = require('./Spinner');
 const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
+const optsArg = require('mkdirp/lib/opts-arg');
 
 function clearline() {
   process.stdout.write('\u001b[1G\u001b[2K');
@@ -51,7 +52,11 @@ function display_verbose(message, filename, trace = false, error = "") {
   stream.write('\r\n');
 }
 
-async function encrypt(file, { verbose, trace, tmp }) {
+async function encrypt(file, {verbose, trace, tmp, hide}) {
+  /*const verbose = options.verbose; 
+  const trace = options.trace; 
+  const tmp = options.tmp; 
+  const hide = options.hide; */
   try {
     const key = await ask_password(true);
 
@@ -127,24 +132,36 @@ async function encrypt(file, { verbose, trace, tmp }) {
     });
 
     encryption.on('end', () => {
-      const diff = process.hrtime(start);
 
-      if (spinner) {
-        spinner.stop();
+      function finish(){
+        const diff = process.hrtime(start);
+        if (spinner) {
+          spinner.stop();
+        }
+
+        if (verbose) {
+          process.stdout.write('\r\n');
+        } else {
+          clearline();
+        }
+
+        console.log(`Finished encrypting files!`);
+        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+        console.log(`Total encrypted files: ${done}`);
+        console.log(`Failed: ${failed} (read-only or access denied files)`);
+
+        process.exit();
       }
 
-      if (verbose) {
-        process.stdout.write('\r\n');
-      } else {
-        clearline();
+      if(hide){
+        var metadata=warshield.encryptNames(file)
+        warshield.encryptFile(metadata, key, tmp).then(()=>{
+          finish()
+        }); 
+      }else{
+        finish(); 
       }
 
-      console.log(`Finished encrypting files!`);
-      console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-      console.log(`Total encrypted files: ${done}`);
-      console.log(`Failed: ${failed} (read-only or access denied files)`);
-
-      process.exit();
     });
   } catch (e) {
     console.error(e.message);
