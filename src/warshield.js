@@ -422,6 +422,12 @@ function shaFileName(name){
   return crypto.createHash('sha256').update(name+salt).digest('hex');
 }
 
+/**
+ * Rename all the subdirectories of a given path with the name sha256 value, 
+ * and fill the obj with the bijective corrispondence (sha -> name, name -> sha)
+ * @param {string} filePath 
+ * @param {Object} obj 
+ */
 function hideNames(filePath, obj={}){
   var file = path.basename(filePath);
   var dir = path.dirname(filePath); 
@@ -440,8 +446,10 @@ function hideNames(filePath, obj={}){
   }
 }
 
-/**Sync function to encrypt names. It works just for directories. For a single file it will not work for consistency problems. 
- * @parm {string} filePath
+/**
+ * Sync function to encrypt names. 
+ * @param {string} filePath
+ * @returns {string} metadataPath
 */
 function encryptNames(filePath){
   var metadata_filenames={};
@@ -459,6 +467,63 @@ function encryptNames(filePath){
   return metadataPath; 
 }
 
+/**
+ * Rename all the subdirectories of a given path with previously stored data in the json metadata obj
+ * @param {string} filePath 
+ * @param {Object} obj 
+ */
+function showNames(filePath, obj={}){
+  var file = path.basename(filePath);
+  var dir = path.dirname(filePath); 
+  var realname = obj[file];  
+  var newPath = path.join(dir, realname)
+
+  fs.renameSync(filePath, newPath); 
+  var stat = fs.statSync(newPath); 
+  if(stat.isDirectory()){
+    var files = fs.readdirSync(newPath); 
+    for(var x of files){
+      var newfilePath= path.join(newPath, x); 
+      showNames(newfilePath, obj); 
+    }
+  }
+}
+
+/**
+ * Function to decrypt files name. It returns the new file path (the one restored). 
+ * If it doesn't find the metadata file it returns the file path passed. To restore the files name, 
+ * it decrypts the found metadata file and deletes it. If somenthing wrong happens during the metadata file decryption
+ * it returns the original file path.  
+ * @param {string} filePath 
+ * @param {string} key 
+ * @param {string} tmp 
+ * @returns {string} 
+ */
+async function decryptNames(filePath, key, tmp){
+  var stat = fs.statSync(filePath); 
+  var metadata = METADATA_FILE; 
+
+  if(stat.isDirectory()){
+    metadata = path.join(filePath, METADATA_FILE); 
+  }
+
+  if(fs.existsSync(metadata)){
+    try{
+      await decryptFile(metadata, key, tmp); 
+      const infoObj = JSON.parse(fs.readFileSync(metadata)); 
+      fs.unlinkSync(metadata); 
+      showNames(filePath, infoObj)
+      return infoObj[filePath]; 
+    }catch(err){
+      return filePath; 
+    }
+
+  }else{
+    return filePath 
+  }
+
+}
+
 
 module.exports = {
   generateKey,
@@ -468,5 +533,7 @@ module.exports = {
   decryptFile,
   encryptRecursive,
   decryptRecursive,
-  encryptNames
+  encryptNames, 
+  decryptNames, 
+  
 }
