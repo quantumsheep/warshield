@@ -13,6 +13,7 @@ program
   .option('-v, --verbose', 'enable verbosity')
   .option('-t, --trace', 'enable stacktrace')
   .option('-p, --tmp <directory>', 'change temporary directory')
+  .option('-h, --hide', 'enable filenames encryption. A metadata file will be created in the same directory. Do not loose the metadata file if you want to be able to restore the names. The decription of names is automatic')
   .description('encrypt a file or all files in a directory')
   .action(encrypt);
 

@@ -453,9 +453,11 @@ function hideNames(filePath, obj={}){
 */
 function encryptNames(filePath){
   var metadata_filenames={};
+  var dirPath = path.dirname(filePath);
+  var oldName = path.basename(filePath)
 
   hideNames(filePath, metadata_filenames); 
-  var newPath = metadata_filenames[filePath]; 
+  var newPath = path.join(dirPath, metadata_filenames[oldName]); 
   if(fs.statSync(newPath).isDirectory()){
     var metadataPath = path.join(newPath, METADATA_FILE);
     fs.writeFileSync(metadataPath, JSON.stringify(metadata_filenames, null, 2));
@@ -501,7 +503,7 @@ function showNames(filePath, obj={}){
  */
 async function decryptNames(filePath, key, tmp){
   var stat = fs.statSync(filePath); 
-  var metadata = METADATA_FILE; 
+  var metadata = path.join(path.dirname(filePath), METADATA_FILE); 
 
   if(stat.isDirectory()){
     metadata = path.join(filePath, METADATA_FILE); 
@@ -512,8 +514,9 @@ async function decryptNames(filePath, key, tmp){
       await decryptFile(metadata, key, tmp); 
       const infoObj = JSON.parse(fs.readFileSync(metadata)); 
       fs.unlinkSync(metadata); 
-      showNames(filePath, infoObj)
-      return infoObj[filePath]; 
+      showNames(filePath, infoObj); 
+      var newPath= path.join(path.dirname(filePath), infoObj[path.basename(filePath)])
+      return newPath; 
     }catch(err){
       return filePath; 
     }
