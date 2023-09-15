@@ -4,6 +4,7 @@ const Spinner = require('./Spinner');
 const os = require('os');
 const path = require('path');
 const mkdirp = require('mkdirp');
+const fs = require('fs'); 
 
 function clearline() {
   process.stdout.write('\u001b[1G\u001b[2K');
@@ -51,10 +52,13 @@ function display_verbose(message, filename, trace = false, error = "") {
   stream.write('\r\n');
 }
 
-async function encrypt(file, { verbose, trace, tmp }) {
+async function encrypt(file, {verbose, trace, tmp, hide}) {
+ 
   try {
     const key = await ask_password(true);
 
+    let added = 0;
+    let current = 0; 
     let done = 0;
     let failed = 0;
 
@@ -83,6 +87,7 @@ async function encrypt(file, { verbose, trace, tmp }) {
     const encryption = warshield.encryptRecursive(file, key, tmp);
 
     encryption.on('crawl-found', filename => {
+      added++; 
       if (verbose) {
         display_verbose("Added file", filename);
       } else {
@@ -108,43 +113,57 @@ async function encrypt(file, { verbose, trace, tmp }) {
 
     encryption.on('done', filename => {
       done++;
-
+      current++; 
       if (verbose) {
-        display_verbose("\x1b[32mDone encrypting", filename);
+        display_verbose(`\x1b[32mDone encrypting [${current}/${added}]`, filename);
       } else {
-        spinner.query = `Encrypting files... ${filename}`;
+        let percent = parseInt((current/added)*100)
+        spinner.query = `Encrypting files ${percent}% : ${filename}`;
       }
     });
 
     encryption.on('failed', (filename, err) => {
       failed++;
-
+      current++; 
       if (verbose) {
-        display_verbose("\x1b[31mFailed encrypting", filename, trace, err);
+        display_verbose(`\x1b[31mFailed encrypting [${current}/${added}]`, filename, trace, err);
       } else {
-        spinner.query = `Encrypting files... ${filename}`;
+        let percent = parseInt((current/added)*100)
+        spinner.query = `Encrypting files ${percent}% : ${filename}`;
       }
     });
 
     encryption.on('end', () => {
-      const diff = process.hrtime(start);
 
-      if (spinner) {
-        spinner.stop();
+      function finish(){
+        const diff = process.hrtime(start);
+        if (spinner) {
+          spinner.stop();
+        }
+
+        if (verbose) {
+          process.stdout.write('\r\n');
+        } else {
+          clearline();
+        }
+
+        console.log(`Finished encrypting files!`);
+        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+        console.log(`Total encrypted files: ${done}`);
+        console.log(`Failed: ${failed} (read-only or access denied files)`);
+
+        process.exit();
       }
 
-      if (verbose) {
-        process.stdout.write('\r\n');
-      } else {
-        clearline();
+      if(hide){
+        var metadata=warshield.encryptNames(file)
+        warshield.encryptFile(metadata, key, tmp).then(()=>{
+          finish()
+        }); 
+      }else{
+        finish(); 
       }
 
-      console.log(`Finished encrypting files!`);
-      console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-      console.log(`Total encrypted files: ${done}`);
-      console.log(`Failed: ${failed} (read-only or access denied files)`);
-
-      process.exit();
     });
   } catch (e) {
     console.error(e.message);
@@ -158,6 +177,8 @@ async function decrypt(file, { verbose, trace, tmp }) {
 
     let done = 0;
     let failed = 0;
+    let added = 0; 
+    let current = 0; 
 
     if (!verbose) {
       var spinner = new Spinner("Starting decryption...");
@@ -179,14 +200,15 @@ async function decrypt(file, { verbose, trace, tmp }) {
       process.stdout.write(' Done!\n');
       process.stdout.write('Starting decrypting files...\n');
     }
-
+    
     const start = process.hrtime();
-
-    const decryption = warshield.decryptRecursive(file, key, tmp);
+    const newfile = await warshield.decryptNames(file, key, tmp); 
+    const decryption = warshield.decryptRecursive(newfile, key, tmp);
 
     decryption.on('crawl-found', filename => {
+      added++; 
       if (verbose) {
-        display_verbose("Failed adding", filename);
+        display_verbose("Added file", filename);
       } else {
         spinner.query = `Crawling files... ${filename}`;
       }
@@ -210,43 +232,49 @@ async function decrypt(file, { verbose, trace, tmp }) {
 
     decryption.on('done', filename => {
       done++;
-
+      current++; 
       if (verbose) {
-        display_verbose("\x1b[32mDone decrypting", filename);
+        display_verbose(`\x1b[32mDone decrypting [${current}/${added}]`, filename);
       } else {
-        spinner.query = `Decrypting files... ${filename}`;
+        let percent = parseInt((current/added)*100)
+        spinner.query = `Decrypting files ${percent}% : ${filename}`;
       }
     });
 
     decryption.on('failed', (filename, err) => {
       failed++;
-
+      current++; 
       if (verbose) {
-        display_verbose("\x1b[31mFailed decrypting", filename, trace, err);
+        display_verbose(`\x1b[32mFailed decrypting [${current}/${added}]`, filename, trace, err);
       } else {
-        spinner.query = `Decrypting files... ${filename}`;
+        let percent = parseInt((current/added)*100)
+        spinner.query = `Decrypting files ${percent}% : ${filename}`;
       }
     });
 
     decryption.on('end', () => {
-      const diff = process.hrtime(start);
+      function finish(){
+        const diff = process.hrtime(start);
 
-      if (spinner) {
-        spinner.stop();
+        if (spinner) {
+          spinner.stop();
+        }
+
+        if (verbose) {
+          process.stdout.write('\r\n');
+        } else {
+          clearline();
+        }
+
+        console.log(`Finished decrypting files!`);
+        console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
+        console.log(`Total decrypted files: ${done}`);
+        console.log(`Failed: ${failed} (read-only, access denied or non-encrypted files)`);
+
+        process.exit();
       }
-
-      if (verbose) {
-        process.stdout.write('\r\n');
-      } else {
-        clearline();
-      }
-
-      console.log(`Finished decrypting files!`);
-      console.log(`Elapsed time: ${((diff[0] * 1e9 + diff[1]) / 1e9).toFixed(2)}s!`);
-      console.log(`Total decrypted files: ${done}`);
-      console.log(`Failed: ${failed} (read-only, access denied or non-encrypted files)`);
-
-      process.exit();
+      
+      finish(); 
     });
   } catch (e) {
     console.error(e.message);

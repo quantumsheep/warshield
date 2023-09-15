@@ -23,6 +23,19 @@ function showHeader() {
   });
 }
 
+async function askHideNames() {
+  showHeader();
+  return inquirer.prompt({
+    name: 'hide',
+    type: 'list',
+    message: 'Do you also want to encrypt your files name?',
+    choices: ['Yes', 'No'],
+    default: 'Yes'
+  }).then((input) => {
+    return input.hide;
+  })
+}
+
 async function askMode() {
   showHeader();
   return inquirer.prompt({
@@ -42,7 +55,7 @@ async function askOptions() {
     name: 'options',
     type: 'checkbox',
     message: 'Choose options you want to enable:',
-    choices: ['verbose', 'trace'],
+    choices: ['verbose', 'trace errors'],
   }).then((input) => {
     return input.options;
   })
@@ -62,18 +75,23 @@ async function askFile() {
 }
 
 async function showUI() {
-  const options = { parent: { verbose: false, trace: false, tmp: false } };
+  const options = {verbose: false, trace: false, tmp: false, hide: true };
   const mode = await askMode();
   const enabledOptions = await askOptions();
-  options.parent.verbose = enabledOptions.includes('verbose');
-  options.parent.trace = enabledOptions.includes('trace');
+  options.verbose = enabledOptions.includes('verbose');
+  options.trace = enabledOptions.includes('trace errors');
   const file = await askFile();
-  showHeader();
 
   if (mode === MODE_DECRYPT) {
+    showHeader();
     await decrypt(file, options)
   }
   else {
+    const hide = await askHideNames();
+    if(hide === 'No'){
+      options.hide=false; 
+    }
+    showHeader()
     await encrypt(file, options)
   }
 }
